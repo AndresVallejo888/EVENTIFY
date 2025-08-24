@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Eventify</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bienvenido a Eventify</h1>
+        <p>Has iniciado sesión correctamente.</p>
+        <button id="logout-btn">Cerrar Sesión</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
+    <script>
+        // Misma configuración de Firebase que en index.html
+        const firebaseConfig = {
+          apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs",
+          authDomain: "eventify-70dbc.firebaseapp.com",
+          projectId: "eventify-70dbc",
+          storageBucket: "eventify-70dbc.firebasestorage.app",
+          messagingSenderId: "489645350340",
+          appId: "1:489645350340:web:f1389c69d8498bb5325891",
+          measurementId: "G-P5QT0JQKXS"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        
+        // Cerrar sesión
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            firebase.auth().signOut().then(() => {
+                window.location.href = "index.html";
+            });
+        });
+    </script>
+</body>
+</html>

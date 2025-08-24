@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventify - Login y Registro</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #e3cdfa 0%, #6a11cb 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .form-container {
+            padding: 30px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f1f1f1;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #777;
+            transition: all 0.3s ease;
+        }
+        
+        .tab.active {
+            color: #6a11cb;
+            border-bottom: 3px solid #6a11cb;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s ease;
+        }
+        
+        input:focus {
+            border-color: #6a11cb;
+            outline: none;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #6a11cb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .message {
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #6a11cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <div class="logo">Eventify</div>
+            
+            <div class="tabs">
+                <div class="tab active" id="login-tab">Iniciar Sesión</div>
+                <div class="tab" id="register-tab">Registrarse</div>
+            </div>
+            
+            <!-- Formulario de Login -->
+            <form id="login-form">
+                <div class="form-group">
+                    <input type="email" id="login-email" placeholder="Correo electrónico" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="login-password" placeholder="Contraseña" required>
+                </div>
+                <button type="submit">Entrar</button>
+                <div id="login-message" class="message"></div>
+            </form>
+            
+            <!-- Formulario de Registro -->
+            <form id="register-form" style="display: none;">
+                <div class="form-group">
+                    <input type="text" id="register-name" placeholder="Nombre" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="register-lastname1" placeholder="Primer apellido" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="register-lastname2" placeholder="Segundo apellido (opcional)">
+                </div>
+                <div class="form-group">
+                    <input type="email" id="register-email" placeholder="Correo electrónico" required>
+                </div>
+                <div class="form-group">
+                    <input type="tel" id="register-phone" placeholder="Teléfono (opcional)">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="register-password" placeholder="Contraseña" required>
+                </div>
+                <button type="submit">Registrarse</button>
+                <div id="register-message" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
+        // Reemplaza todo esto con los datos de TU proyecto
+        const firebaseConfig = {
+          apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs",
+          authDomain: "eventify-70dbc.firebaseapp.com",
+          projectId: "eventify-70dbc",
+          storageBucket: "eventify-70dbc.firebasestorage.app",
+          messagingSenderId: "489645350340",
+          appId: "1:489645350340:web:f1389c69d8498bb5325891",
+          measurementId: "G-P5QT0JQKXS"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // Referencias a elementos del DOM
+        const loginTab = document.getElementById('login-tab');
+        const registerTab = document.getElementById('register-tab');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginMessage = document.getElementById('login-message');
+        const registerMessage = document.getElementById('register-message');
+        
+        // Cambiar entre pestañas
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('active');
+            registerTab.classList.remove('active');
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+        });
+        
+        registerTab.addEventListener('click', () => {
+            registerTab.classList.add('active');
+            loginTab.classList.remove('active');
+            registerForm.style.display = 'block';
+            loginForm.style.display = 'none';
+        });
+        
+        // Manejar registro de usuario
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const name = document.getElementById('register-name').value;
+            const lastname1 = document.getElementById('register-lastname1').value;
+            const lastname2 = document.getElementById('register-lastname2').value;
+            const phone = document.getElementById('register-phone').value;
+            
+            // Crear usuario con Firebase Authentication
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Usuario registrado con éxito
+                    const user = userCredential.user;
+                    
+                    // Guardar información adicional en Firestore
+                    return db.collection('users').doc(user.uid).set({
+                        nombre: name,
+                        primer_apellido: lastname1,
+                        segundo_apellido: lastname2,
+                        telefono: phone,
+                        email: email,
+                        fecha_registro: new Date()
+                    });
+                })
+                .then(() => {
+                    showMessage(registerMessage, '¡Registro exitoso! Bienvenido a Eventify.', 'success');
+                    registerForm.reset();
+                    
+                    // Cambiar a pestaña de login después de 2 segundos
+                    setTimeout(() => {
+                        loginTab.click();
+                    }, 2000);
+                })
+                .catch((error) => {
+                    showMessage(registerMessage, getErrorMessage(error.code), 'error');
+                });
+        });
+        
+        // Manejar inicio de sesión
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Inicio de sesión exitoso
+                    showMessage(loginMessage, 'Inicio de sesión exitoso. Redirigiendo...', 'success');
+                    
+                    // Redirigir al dashboard
+                    setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                    }, 1500);
+                })
+                .catch((error) => {
+                    showMessage(loginMessage, getErrorMessage(error.code), 'error');
+                });
+        });
+        
+        // Función para mostrar mensajes
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = 'message ' + type;
+            element.style.display = 'block';
+            
+            // Ocultar mensaje después de 5 segundos
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Función para obtener mensajes de error amigables
+        function getErrorMessage(errorCode) {
+            switch(errorCode) {
+                case 'auth/email-already-in-use':
+                    return 'Este correo electrónico ya está registrado.';
+                case 'auth/invalid-email':
+                    return 'El correo electrónico no tiene un formato válido.';
+                case 'auth/operation-not-allowed':
+                    return 'La operación no está permitida.';
+                case 'auth/weak-password':
+                    return 'La contraseña es demasiado débil. Use al menos 6 caracteres.';
+                case 'auth/user-disabled':
+                    return 'La cuenta ha sido deshabilitada.';
+                case 'auth/user-not-found':
+                    return 'No existe una cuenta con este correo electrónico.';
+                case 'auth/wrong-password':
+                    return 'La contraseña es incorrecta.';
+                default:
+                    return 'Ha ocurrido un error. Por favor, intenta de nuevo.';
+            }
+        }
+    </script>
+</body>
+</html>
