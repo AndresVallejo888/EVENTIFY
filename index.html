@@ -123,6 +123,21 @@
             font-weight: bold;
             color: #6a11cb;
         }
+
+        .forgot-password {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .forgot-password a {
+            color: #6a11cb;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -144,6 +159,9 @@
                     <input type="password" id="login-password" placeholder="Contraseña" required>
                 </div>
                 <button type="submit">Entrar</button>
+                <div class="forgot-password">
+                    <a href="#" id="forgot-password-link">¿Olvidaste tu contraseña?</a>
+                </div>
                 <div id="login-message" class="message"></div>
             </form>
             
@@ -179,8 +197,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <script>
-        // PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
-        // Reemplaza todo esto con los datos de TU proyecto
+        // Configuración Firebase
         const firebaseConfig = {
           apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs",
           authDomain: "eventify-70dbc.firebaseapp.com",
@@ -191,18 +208,18 @@
           measurementId: "G-P5QT0JQKXS"
         };
         
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
         
-        // Referencias a elementos del DOM
+        // Referencias
         const loginTab = document.getElementById('login-tab');
         const registerTab = document.getElementById('register-tab');
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
         const loginMessage = document.getElementById('login-message');
         const registerMessage = document.getElementById('register-message');
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
         
         // Cambiar entre pestañas
         loginTab.addEventListener('click', () => {
@@ -219,7 +236,7 @@
             loginForm.style.display = 'none';
         });
         
-        // Manejar registro de usuario
+        // Registro
         registerForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -230,13 +247,10 @@
             const lastname2 = document.getElementById('register-lastname2').value;
             const phone = document.getElementById('register-phone').value;
             
-            // Crear usuario con Firebase Authentication
             auth.createUserWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Usuario registrado con éxito
                     const user = userCredential.user;
                     
-                    // Guardar información adicional en Firestore
                     return db.collection('users').doc(user.uid).set({
                         nombre: name,
                         primer_apellido: lastname1,
@@ -250,7 +264,6 @@
                     showMessage(registerMessage, '¡Registro exitoso! Bienvenido a Eventify.', 'success');
                     registerForm.reset();
                     
-                    // Cambiar a pestaña de login después de 2 segundos
                     setTimeout(() => {
                         loginTab.click();
                     }, 2000);
@@ -260,7 +273,7 @@
                 });
         });
         
-        // Manejar inicio de sesión
+        // Login
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -268,11 +281,8 @@
             const password = document.getElementById('login-password').value;
             
             auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    // Inicio de sesión exitoso
+                .then(() => {
                     showMessage(loginMessage, 'Inicio de sesión exitoso. Redirigiendo...', 'success');
-                    
-                    // Redirigir al dashboard
                     setTimeout(() => {
                         window.location.href = "dashboard.html";
                     }, 1500);
@@ -281,20 +291,37 @@
                     showMessage(loginMessage, getErrorMessage(error.code), 'error');
                 });
         });
+
+        // Recuperar contraseña
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            if (!email) {
+                showMessage(loginMessage, 'Por favor ingresa tu correo electrónico para recuperar la contraseña.', 'error');
+                return;
+            }
+            
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    showMessage(loginMessage, 'Te enviamos un correo para restablecer tu contraseña.', 'success');
+                })
+                .catch((error) => {
+                    showMessage(loginMessage, getErrorMessage(error.code), 'error');
+                });
+        });
         
-        // Función para mostrar mensajes
+        // Mostrar mensajes
         function showMessage(element, message, type) {
             element.textContent = message;
             element.className = 'message ' + type;
             element.style.display = 'block';
             
-            // Ocultar mensaje después de 5 segundos
             setTimeout(() => {
                 element.style.display = 'none';
             }, 5000);
         }
         
-        // Función para obtener mensajes de error amigables
+        // Mensajes de error
         function getErrorMessage(errorCode) {
             switch(errorCode) {
                 case 'auth/email-already-in-use':
