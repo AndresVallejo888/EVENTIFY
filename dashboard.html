@@ -1,70 +1,215 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Eventify</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-        }
-        button {
-            padding: 10px 15px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #c82333;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventify - Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fff;
+      color: #333;
+    }
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 30px;
+      border-bottom: 1px solid #ddd;
+    }
+    header .logo {
+      font-size: 22px;
+      font-weight: bold;
+      color: #8a2be2;
+    }
+    header .search-bar {
+      flex: 1;
+      margin: 0 20px;
+    }
+    header input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+    }
+    header .icons {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* Filtros */
+    .filters {
+      display: flex;
+      gap: 15px;
+      padding: 15px 30px;
+      border-bottom: 1px solid #ddd;
+    }
+    .filters select {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    /* Sección */
+    section {
+      padding: 20px 30px;
+    }
+    h2 {
+      margin-bottom: 15px;
+    }
+
+    /* Grid Temáticas */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: center;
+    }
+    .card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+    .card p {
+      padding: 10px;
+      font-weight: bold;
+    }
+
+    /* Servicios en carrusel */
+    .services {
+      display: flex;
+      gap: 15px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+    }
+    .circle-card {
+      flex: 0 0 auto;
+      width: 160px;
+      text-align: center;
+    }
+    .circle-card img {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 5px;
+    }
+    button {
+        padding: 10px 15px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #c82333;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Bienvenido a Eventify</h1>
-        <p>Has iniciado sesión correctamente.</p>
-        <button id="logout-btn">Cerrar Sesión</button>
+  <!-- Header -->
+  <header>
+    <div class="logo"><img src="logo.png"></div>
+    <span>📍 Monterrey, Nuevo León</span>
+    <div class="search-bar">
+      <input type="text" placeholder="Buscar servicios, eventos...">
+    </div>
+    <div class="icons">
+      
+      <span>🛒 Bolsa</span>
+    </div>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters">
+    <select>
+      <option>Costo</option>
+    </select>
+    <select>
+      <option>Ofertas</option>
+    </select>
+    <select>
+      <option>Mayor calificación</option>
+    </select>
+    <select>
+      <option>Organizar</option>
+    </select>
+  </div>
+
+  <!-- Temáticas -->
+  <section>
+    <h2>Temáticas</h2>
+    <div class="grid">
+      <div class="card"><img src="assets/graduacion.jpg"><p>Graduación</p></div>
+      <div class="card"><img src="assets/cumple.jpeg"><p>Cumpleaños</p></div>
+      <div class="card"><img src="assets/despedida.jpeg"><p>Despedida de Soltera</p></div>
+      <div class="card"><img src="assets/boda.jpeg"><p>Boda</p></div>
+    </div>
+    <div class="grid">
+    <div class="card"><img src="assets/quince.jpeg"><p>Quinceañeras</p></div>
+      <div class="card"><img src="assets/baby.jpeg"><p>Baby Shower</p></div>
+      <div class="card"><img src="assets/soltero.jpeg"><p>Despedida de Soltero</p></div>
+      <div class="card"><img src="assets/brunch.jpeg"><p>Brunch</p></div>
+    </div>
+  </section>
+
+  <!-- Servicios -->
+  <section>
+    <h2>Servicios</h2>
+    <h3>Comida y Bebida</h3>
+    <div class="services">
+      <div class="circle-card"><img src="assets/catering.jpg"><p>Catering</p></div>
+      <div class="circle-card"><img src="assets/banquete.jpg"><p>Banquetería</p></div>
+      <div class="circle-card"><img src="assets/buffet.jpg"><p>Buffet</p></div>
+      <div class="circle-card"><img src="assets/bocadillos.jpg"><p>Bocadillos</p></div>
+      <div class="circle-card"><img src="assets/foodtruck.jpg"><p>Food Trucks</p></div>
+      <div class="circle-card"><img src="assets/estaciones.jpeg"><p>Estaciones</p></div>
+      <div class="circle-card"><img src="assets/bebidasAlcoholicas.jpeg"><p>Bebidas Alcoholicas</p></div>
+      <div class="circle-card"><img src="assets/bebidasNoAlcoholicas.jpeg"><p>Bebidas No Alcoholicas</p></div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    
-    <script>
-        // Misma configuración de Firebase que en index.html
-        const firebaseConfig = {
-          apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs",
-          authDomain: "eventify-70dbc.firebaseapp.com",
-          projectId: "eventify-70dbc",
-          storageBucket: "eventify-70dbc.firebasestorage.app",
-          messagingSenderId: "489645350340",
-          appId: "1:489645350340:web:f1389c69d8498bb5325891",
-          measurementId: "G-P5QT0JQKXS"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        
-        // Cerrar sesión
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            firebase.auth().signOut().then(() => {
-                window.location.href = "index.html";
-            });
-        });
-    </script>
+    <h3>Música y Entretenimiento</h3>
+    <div class="services">
+      <div class="circle-card"><img src="assets/dj.jpg"><p>DJ</p></div>
+      <div class="circle-card"><img src="assets/banda.jpeg"><p>Banda en vivo</p></div>
+      <div class="circle-card"><img src="assets/show.jpeg"><p>Show Temático</p></div>
+      <div class="circle-card"><img src="assets/feria.jpeg"><p>Juegos de Feria</p></div>
+      <div class="circle-card"><img src="assets/karaoke.jpeg"><p>Karaoke</p></div>
+      <div class="circle-card"><img src="assets/iluminacion.jpeg"><p>Iluminación</p></div>
+      <div class="circle-card"><img src="assets/performers.jpg"><p>Performers</p></div>
+      <div class="circle-card"><img src="assets/animadores.jpg"><p>Animadores</p></div>
+    </div>
+  </section>
+
+  <section>
+    <button id="logout-btn">Cerrar Sesión</button>
+  </section>
+
+  <!-- Firebase script -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs",
+      authDomain: "eventify-70dbc.firebaseapp.com",
+      projectId: "eventify-70dbc",
+      storageBucket: "eventify-70dbc.firebasestorage.app",
+      messagingSenderId: "489645350340",
+      appId: "1:489645350340:web:f1389c69d8498bb5325891",
+      measurementId: "G-P5QT0JQKXS"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 </body>
 </html>
