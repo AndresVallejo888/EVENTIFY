@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Cargador de Datos de Eventify</title>
+</head>
+<body>
+    <h1>Cargador de Datos para Firestore</h1>
+    <p>Abre la consola del desarrollador (F12) para ver el progreso.</p>
+    <button id="load-button">Cargar Todos los Datos a Firestore</button>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // TU CONFIGURACIÓN DE FIREBASE (¡MUY IMPORTANTE!)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs",
+            authDomain: "eventify-70dbc.firebaseapp.com",
+            projectId: "eventify-70dbc",
+            storageBucket: "eventify-70dbc.appspot.com",
+            messagingSenderId: "489645350340",
+            appId: "1:489645350340:web:f1389c69d8498bb5325891",
+            measurementId: "G-P5QT0JQKXS"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // --- LISTA COMPLETA DE DATOS ---
+        const tematicas = [
+            { name: 'Bodas', image: 'assets/boda.jpeg' },
+            { name: 'Cumpleaños', image: 'assets/cumple.jpeg' },
+            { name: 'Quinceañeras', image: 'assets/quince.jpeg' },
+            { name: 'Graduaciones', image: 'assets/graduacion.jpg' },
+            { name: 'Baby Shower', image: 'assets/baby.jpeg' },
+            { name: 'Despedida Soltero/a', image: 'assets/despedida.jpeg' },
+            { name: 'Brunch', image: 'assets/brunch.jpeg' }
+        ];
+
+        const servicios = [
+            { name: 'Catering', image: 'assets/catering.jpg', category: 'comida-bebida', categoryTitle: 'Comida y Bebida' },
+            { name: 'Banquetería', image: 'assets/banquete.jpg', category: 'comida-bebida', categoryTitle: 'Comida y Bebida' },
+            { name: 'Buffet', image: 'assets/buffet.jpg', category: 'comida-bebida', categoryTitle: 'Comida y Bebida' },
+            { name: 'Bocadillos', image: 'assets/bocadillos.jpg', category: 'comida-bebida', categoryTitle: 'Comida y Bebida' },
+            { name: 'Food Trucks', image: 'assets/foodtruck.jpg', category: 'comida-bebida', categoryTitle: 'Comida y Bebida' },
+            { name: 'Estaciones', image: 'assets/estaciones.jpeg', category: 'comida-bebida', categoryTitle: 'Comida y Bebida' },
+            { name: 'Bebidas Alcohólicas', image: 'assets/bebidasAlcoholicas.jpeg', category: 'comida-bebida', categoryTitle: 'Comida y Bebida' },
+            { name: 'Bebidas No Alcohólicas', image: 'assets/bebidasNoAlcoholicas.jpeg', category: 'comida-bebida', categoryTitle: 'Comida y Bebida' },
+            { name: 'DJ', image: 'assets/dj.jpg', category: 'musica-entretenimiento', categoryTitle: 'Música y Entretenimiento' },
+            { name: 'Banda en vivo', image: 'assets/banda.jpeg', category: 'musica-entretenimiento', categoryTitle: 'Música y Entretenimiento' },
+            { name: 'Show Temático', image: 'assets/show.jpeg', category: 'musica-entretenimiento', categoryTitle: 'Música y Entretenimiento' },
+            { name: 'Juegos de Feria', image: 'assets/feria.jpeg', category: 'musica-entretenimiento', categoryTitle: 'Música y Entretenimiento' },
+            { name: 'Karaoke', image: 'assets/karaoke.jpeg', category: 'musica-entretenimiento', categoryTitle: 'Música y Entretenimiento' },
+            { name: 'Iluminación', image: 'assets/iluminacion.jpeg', category: 'musica-entretenimiento', categoryTitle: 'Música y Entretenimiento' },
+            { name: 'Performers', image: 'assets/performers.jpg', category: 'musica-entretenimiento', categoryTitle: 'Música y Entretenimiento' },
+            { name: 'Animadores', image: 'assets/animadores.jpg', category: 'musica-entretenimiento', categoryTitle: 'Música y Entretenimiento' },
+        ];
+        
+        async function uploadData() {
+            console.log("Empezando carga de datos...");
+            
+            // Subir temáticas
+            for (const item of tematicas) {
+                try {
+                    await db.collection("tematicas").add(item);
+                    console.log(`✅ Temática '${item.name}' agregada.`);
+                } catch (e) {
+                    console.error("Error agregando temática: ", e);
+                }
+            }
+
+            // Subir servicios
+            for (const item of servicios) {
+                try {
+                    await db.collection("servicios").add(item);
+                    console.log(`✅ Servicio '${item.name}' agregado.`);
+                } catch (e) {
+                    console.error("Error agregando servicio: ", e);
+                }
+            }
+
+            console.log("🎉 ¡Carga de datos completada!");
+            alert("¡Todos los datos han sido cargados a Firestore!");
+        }
+
+        document.getElementById('load-button').addEventListener('click', uploadData);
+    </script>
+</body>
+</html>

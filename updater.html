@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Actualizador de Precios de Eventify</title>
+</head>
+<body>
+    <h1>Actualizador de Precios para Servicios en Firestore</h1>
+    <p>Abre la consola del desarrollador (F12) para ver el progreso. Este script añadirá un campo 'price' a cada servicio en tu base de datos.</p>
+    <button id="update-button">Añadir Precios a Servicios</button>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs", authDomain: "eventify-70dbc.firebaseapp.com", projectId: "eventify-70dbc", storageBucket: "eventify-70dbc.appspot.com", messagingSenderId: "489645350340", appId: "1:489645350340:web:f1389c69d8498bb5325891" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function updateServicesWithPrice() {
+            console.log("Empezando actualización de precios...");
+            const servicesRef = db.collection("servicios");
+            try {
+                const snapshot = await servicesRef.get();
+                if (snapshot.empty) {
+                    console.log("No se encontraron servicios.");
+                    return;
+                }
+                
+                let updates = 0;
+                for (const doc of snapshot.docs) {
+                    // Solo actualiza si el campo 'price' no existe
+                    if (!doc.data().price) {
+                        const randomPrice = Math.floor(Math.random() * (25000 - 1500 + 1) + 1500);
+                        await servicesRef.doc(doc.id).update({ price: randomPrice });
+                        console.log(`✅ Precio añadido a '${doc.data().name}' ($${randomPrice})`);
+                        updates++;
+                    } else {
+                        console.log(`ℹ️ '${doc.data().name}' ya tiene precio.`);
+                    }
+                }
+                alert(`¡Actualización completada! Se añadieron precios a ${updates} servicios.`);
+                console.log(`🎉 ¡Actualización de precios completada!`);
+
+            } catch (e) {
+                console.error("Error actualizando servicios: ", e);
+            }
+        }
+
+        document.getElementById('update-button').addEventListener('click', updateServicesWithPrice);
+    </script>
+</body>
+</html>
