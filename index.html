@@ -61,7 +61,10 @@
         registerForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('register-email').value, password = document.getElementById('register-password').value, name = document.getElementById('register-name').value, lastname1 = document.getElementById('register-lastname1').value;
-            auth.createUserWithEmailAndPassword(email, password).then(cred => db.collection('users').doc(cred.user.uid).set({ nombre: name, primerApellido: lastname1, correo: email, fechaRegistro: new Date() })).then(() => { showMessage(registerMessage, '¡Registro exitoso! Ahora inicia sesión.', 'success'); registerForm.reset(); setTimeout(() => loginTab.click(), 2000); }).catch(err => showMessage(registerMessage, err.message, 'error'));
+            auth.createUserWithEmailAndPassword(email, password).then(cred => {
+                cred.user.updateProfile({ displayName: name }); // Actualiza el nombre en Authentication
+                db.collection('users').doc(cred.user.uid).set({ nombre: name, primerApellido: lastname1, correo: email, fechaRegistro: new Date() })
+            }).then(() => { showMessage(registerMessage, '¡Registro exitoso! Ahora inicia sesión.', 'success'); registerForm.reset(); setTimeout(() => loginTab.click(), 2000); }).catch(err => showMessage(registerMessage, err.message, 'error'));
         });
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();

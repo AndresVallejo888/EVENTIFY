@@ -16,9 +16,8 @@
             <div class="sidebar-header"><div class="logo">Eventify ✨</div></div>
             <nav class="sidebar-nav">
                 <a href="#" class="nav-link active" data-view="explorar"><i data-feather="compass"></i> Explorar</a>
-                <a href="#" class="nav-link" data-view="mi-evento"><i data-feather="settings"></i> Mi Evento</a>
+                <a href="#" class="nav-link" data-view="mi-evento"><i data-feather="settings"></i> Mis Eventos</a>
                 <a href="#" class="nav-link" data-view="presupuesto"><i data-feather="dollar-sign"></i> Presupuesto</a>
-                <a href="#" class="nav-link" data-view="checklist"><i data-feather="check-square"></i> Checklist</a>
                 <a href="#" class="nav-link" data-view="proveedores"><i data-feather="users"></i> Proveedores</a>
                 <a href="#" class="nav-link" data-view="guardados"><i data-feather="heart"></i> Guardados</a>
             </nav>
@@ -32,10 +31,9 @@
                     <input type="text" id="search-input" placeholder="Busca 'DJ para bodas' o 'catering'">
                 </div>
                 <div class="user-actions">
-                    <a href="#" class="action-icon" id="saved-items-button" aria-label="Guardados"><i data-feather="heart"></i></a>
                     <div class="user-profile" id="profile-button">
-                        <img src="https://i.pravatar.cc/40?u=a042581f4e29026704d" alt="Avatar">
-                        <span id="user-name-display"></span>
+                        <img src="https://i.pravatar.cc/40" alt="Avatar">
+                        <span id="user-name-display">Cargando...</span>
                     </div>
                 </div>
             </header>
@@ -43,67 +41,38 @@
             <div id="app-views">
                 <div id="view-explorar" class="app-view active">
                     <section class="event-dashboard">
-                        <div class="dashboard-card budget-overview">
-                            <h4>Presupuesto</h4>
-                            <div class="progress-bar"><div id="budget-progress" class="progress"></div></div>
-                            <p><span id="budget-spent">$0</span> de <span id="budget-total">$0</span></p>
+                        <div class="dashboard-card">
+                            <h4>Evento Activo</h4>
+                            <p id="active-event-title">Crea o selecciona un evento</p>
+                            <small id="active-event-date">para empezar a planificar.</small>
                         </div>
-                        <div class="dashboard-card checklist-overview">
-                            <h4>Checklist</h4>
-                            <p><span id="checklist-completed">0</span> de <span id="checklist-total">0</span> tareas completadas</p>
+                        <div class="dashboard-card budget-overview">
+                            <h4>Presupuesto Restante</h4>
+                            <p><span id="budget-remaining">$...</span></p>
+                            <div class="progress-bar"><div id="budget-progress" class="progress"></div></div>
                         </div>
                         <div class="dashboard-card vendors-overview">
                             <h4>Proveedores</h4>
-                            <p><span id="vendors-count">0</span> contratados</p>
+                            <p><span id="vendors-count">...</span> contratados</p>
                         </div>
                     </section>
                     <div id="services-content"></div>
                 </div>
 
                 <div id="view-mi-evento" class="app-view">
-                    <h2>Detalles de Mi Evento</h2>
-                    <div class="card-view">
-                        <form id="event-details-form">
-                            <div class="form-group">
-                                <label for="event-name">Nombre del Evento</label>
-                                <input type="text" id="event-name" placeholder="Ej: Boda de Ana y Juan">
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="event-date">Fecha del Evento</label>
-                                    <input type="date" id="event-date">
-                                </div>
-                                <div class="form-group">
-                                    <label for="event-location">Lugar</label>
-                                    <input type="text" id="event-location" placeholder="Ej: Jardín Las Fuentes">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn-primary">Guardar Cambios</button>
-                        </form>
-                    </div>
+                    <h2>Mis Eventos <button class="btn-primary btn-small" id="create-event-btn">Crear Nuevo Evento</button></h2>
+                    <div id="events-list-container">
+                        </div>
                 </div>
                 
                 <div id="view-presupuesto" class="app-view">
                     <h2>Resumen de Presupuesto <button class="btn-secondary btn-small" id="edit-budget-btn">Editar Total</button></h2>
                     <div class="card-view" id="budget-details-content"></div>
                 </div>
-
-                <div id="view-checklist" class="app-view">
-                    <h2>Checklist de Tareas</h2>
-                    <div class="card-view">
-                        <form id="add-task-form" class="add-task-form">
-                            <input type="text" id="new-task-input" placeholder="Añadir nueva tarea..." required>
-                            <button type="submit" class="btn-primary">Añadir</button>
-                        </form>
-                        <ul id="checklist-container" class="checklist"></ul>
-                    </div>
-                </div>
-
                 <div id="view-proveedores" class="app-view">
                     <h2>Mis Proveedores Contratados</h2>
                     <div class="card-view" id="vendors-list-content"></div>
                 </div>
-
                 <div id="view-guardados" class="app-view">
                     <h2>Mis Servicios Guardados</h2>
                     <div id="saved-items-content"></div>

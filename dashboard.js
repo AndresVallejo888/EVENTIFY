@@ -5,141 +5,203 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 document.addEventListener('DOMContentLoaded', () => {
-    let currentUser;
-    let eventState = {};
-    let allServices = [];
+    // --- ESTADO GLOBAL DE LA APLICACIÓN ---
+    let currentUser, userEvents = [], activeEvent = null, allServices = [];
+
+    // --- ELEMENTOS DEL DOM ---
+    const modalContainer = document.getElementById('modal-container');
+    const modalBody = document.getElementById('modal-body');
 
     // --- MANEJO DE AUTENTICACIÓN ---
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
-            init();
+            initApp();
         } else {
             window.location.href = "index.html";
         }
     });
 
-    document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
-
-    // --- LÓGICA DE FIRESTORE: LEER Y GUARDAR DATOS ---
-    async function loadEventState() {
-        const eventRef = db.collection('events').doc(currentUser.uid);
-        const doc = await eventRef.get();
-        if (doc.exists) {
-            eventState = doc.data();
-        } else {
-            eventState = {
-                eventName: "Mi Nuevo Evento", eventDate: "", eventLocation: "",
-                budget: { total: 50000, spent: 0 },
-                checklist: [{ text: 'Definir fecha y lugar', completed: false }, { text: 'Contratar fotógrafo', completed: false }],
-                vendors: [], savedItems: []
-            };
-            await saveEventState();
-        }
-    }
-    async function saveEventState() {
-        if (!currentUser) return;
-        await db.collection('events').doc(currentUser.uid).set(eventState);
-    }
-    async function fetchServices() {
+    // --- LÓGICA DE FIRESTORE ---
+    const loadUserEvents = async () => {
+        const snapshot = await db.collection('events').where('userId', '==', currentUser.uid).get();
+        userEvents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        activeEvent = userEvents.length > 0 ? userEvents[0] : null;
+    };
+    const saveActiveEvent = async () => {
+        if (!currentUser || !activeEvent) return;
+        const eventData = { ...activeEvent };
+        delete eventData.id;
+        await db.collection('events').doc(activeEvent.id).set(eventData);
+    };
+    const createNewEvent = async () => {
+        const newEventData = {
+            userId: currentUser.uid, eventName: "Nuevo Evento", eventDate: "", eventLocation: "",
+            budget: { total: 100000, spent: 0 }, vendors: [], savedItems: []
+        };
+        const docRef = await db.collection('events').add(newEventData);
+        const newEvent = { id: docRef.id, ...newEventData };
+        userEvents.push(newEvent);
+        activeEvent = newEvent;
+        renderAll();
+        switchView('mi-evento');
+    };
+    const deleteEvent = async (eventId) => {
+        await db.collection('events').doc(eventId).delete();
+        await loadUserEvents(); // Recarga la lista de eventos actualizada
+        renderAll();
+    };
+    const fetchServices = async () => {
         const snapshot = await db.collection('servicios').get();
         allServices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }
+    };
 
-    // --- LÓGICA DE RENDERIZADO (DIBUJA LA UI) ---
-    function renderAll() {
-        renderEventOverview(); renderMiEventoView(); renderPresupuestoView(); renderChecklistView();
-        renderProveedoresView(); renderGuardadosView(); renderServices(document.querySelector('.nav-link.active')?.dataset.view);
+    // --- LÓGICA DE RENDERIZADO ---
+    const renderAll = () => {
+        renderEventOverview(); renderMiEventoView(); renderProveedoresView();
+        renderGuardadosView(); renderServices(); renderPresupuestoView();
         feather.replace();
-    }
+    };
     const renderEventOverview = () => {
-        const spent = eventState.vendors.reduce((sum, v) => sum + v.price, 0);
-        eventState.budget.spent = spent;
-        document.getElementById('budget-spent').textContent = `$${spent.toLocaleString()}`;
-        document.getElementById('budget-total').textContent = `$${eventState.budget.total.toLocaleString()}`;
-        document.getElementById('budget-progress').style.width = `${(spent / eventState.budget.total) * 100}%`;
-        const completedTasks = eventState.checklist.filter(t => t.completed).length;
-        document.getElementById('checklist-completed').textContent = completedTasks;
-        document.getElementById('checklist-total').textContent = eventState.checklist.length;
-        document.getElementById('vendors-count').textContent = eventState.vendors.length;
         document.getElementById('user-name-display').textContent = currentUser.displayName || currentUser.email;
+        if (!activeEvent) {
+            document.getElementById('active-event-title').textContent = "Crea o selecciona un evento";
+            document.getElementById('active-event-date').textContent = "para empezar a planificar";
+            document.getElementById('budget-remaining').textContent = '$...';
+            document.getElementById('budget-progress').style.width = '0%';
+            document.getElementById('vendors-count').textContent = '...';
+            return;
+        }
+        const spent = activeEvent.vendors.reduce((sum, v) => sum + v.price, 0);
+        activeEvent.budget.spent = spent;
+        const remaining = activeEvent.budget.total - spent;
+        document.getElementById('active-event-title').textContent = activeEvent.eventName;
+        document.getElementById('active-event-date').textContent = activeEvent.eventDate || 'Sin fecha definida';
+        document.getElementById('budget-remaining').textContent = `$${remaining.toLocaleString()}`;
+        document.getElementById('budget-progress').style.width = `${(spent / activeEvent.budget.total) * 100}%`;
+        document.getElementById('vendors-count').textContent = activeEvent.vendors.length;
     };
     const renderMiEventoView = () => {
-        document.getElementById('event-name').value = eventState.eventName || "";
-        document.getElementById('event-date').value = eventState.eventDate || "";
-        document.getElementById('event-location').value = eventState.eventLocation || "";
+        const container = document.getElementById('events-list-container');
+        if (userEvents.length === 0) { container.innerHTML = "<p>Aún no has creado ningún evento. ¡Haz clic en 'Crear Nuevo Evento' para empezar!</p>"; return; }
+        container.innerHTML = userEvents.map(event => `
+            <div class="event-card ${activeEvent && event.id === activeEvent.id ? 'active' : ''}" data-id="${event.id}">
+                <button class="delete-event-btn js-delete-event" data-id="${event.id}" title="Eliminar evento">&times;</button>
+                <div class="event-card-info js-select-event" data-id="${event.id}">
+                    <h3>${event.eventName}</h3><p>${event.eventDate || 'Sin fecha'}</p>
+                </div>
+                <div class="event-card-actions">
+                    <button class="btn-secondary btn-small js-edit-event" data-id="${event.id}">Editar</button>
+                </div>
+            </div>`).join('');
     };
-    const renderPresupuestoView = () => {
-        const content = document.getElementById('budget-details-content');
-        content.innerHTML = `<ul class="vendor-list">${eventState.vendors.map(v => `<li><span>${v.name}</span><span>$${v.price.toLocaleString()}</span></li>`).join('') || '<li>Aún no has contratado proveedores.</li>'}</ul>`;
+    const renderProveedoresView = () => {
+        const container = document.getElementById('vendors-list-content');
+        if (!activeEvent) { container.innerHTML = "<p>Selecciona un evento para ver sus proveedores.</p>"; return; }
+        container.innerHTML = `<ul class="vendor-list">${activeEvent.vendors.map(vendor => `
+            <li><span><strong>${vendor.name}</strong><br><small>${vendor.providerName}</small></span>
+            <span>$${vendor.price.toLocaleString()}</span><button class="delete-vendor-btn" data-id="${vendor.id}"><i data-feather="x-circle"></i></button></li>
+        `).join('') || '<li>No has contratado proveedores para este evento.</li>'}</ul>`;
     };
-    const renderChecklistView = () => {
-        const container = document.getElementById('checklist-container');
-        container.innerHTML = eventState.checklist.map((task, index) => `
-            <li>
-                <input type="checkbox" id="task-${index}" data-index="${index}" ${task.completed ? 'checked' : ''}>
-                <label for="task-${index}" class="${task.completed ? 'completed' : ''}">${task.text}</label>
-                <button class="delete-task-btn" data-index="${index}"><i data-feather="trash-2"></i></button>
-            </li>`).join('');
-    };
-    const renderProveedoresView = () => { /* Similar a Presupuesto, puedes detallar más aquí */ };
     const renderGuardadosView = () => {
-        const savedServices = eventState.savedItems.map(savedId => allServices.find(s => s.id === savedId)).filter(Boolean);
-        document.getElementById('saved-items-content').innerHTML = `<div class="services-grid">${savedServices.map(service => createServiceCardHTML(service)).join('')}</div>`;
+        const container = document.getElementById('saved-items-content');
+        if (!activeEvent) { container.innerHTML = "<p>Selecciona un evento para ver sus elementos guardados.</p>"; return; }
+        const savedServices = activeEvent.savedItems.map(savedId => allServices.find(s => s.id === savedId)).filter(Boolean);
+        if(savedServices.length === 0) { container.innerHTML = '<p>Aún no has guardado ningún servicio para este evento.</p>'; return; }
+        container.innerHTML = `<div class="services-grid">${savedServices.map(createServiceCardHTML).join('')}</div>`;
     };
     const renderServices = () => {
+        const container = document.getElementById('services-content');
+        if (!activeEvent) { container.innerHTML = "<h2>Selecciona un evento para añadir servicios</h2>"; return; }
         const searchTerm = document.getElementById('search-input').value.toLowerCase();
         const filteredServices = allServices.filter(s => s.name.toLowerCase().includes(searchTerm));
-        document.getElementById('services-content').innerHTML = `<div class="services-grid">${filteredServices.map(service => createServiceCardHTML(service)).join('')}</div>`;
+        container.innerHTML = `<h2>Explorar Servicios</h2><div class="services-grid">${filteredServices.map(createServiceCardHTML).join('')}</div>`;
     };
     const createServiceCardHTML = (service) => {
-        const isSaved = eventState.savedItems.includes(service.id);
-        const isAdded = eventState.vendors.some(v => v.id === service.id);
+        const isAdded = activeEvent && activeEvent.vendors.some(v => v.id === service.id);
+        const isSaved = activeEvent && activeEvent.savedItems.includes(service.id);
         return `<div class="service-card" data-id="${service.id}">
             <img src="${service.image}" alt="${service.name}" class="service-card-img">
             <div class="service-card-content">
-                <h3>${service.name}</h3>
-                <p>${service.categoryTitle} • Desde $${service.price.toLocaleString()}</p>
+                <h3>${service.name}</h3><p>${service.providerName || ''} • Desde $${(service.price || 0).toLocaleString()}</p>
                 <div class="service-card-actions">
                     <button class="card-btn btn-secondary js-save-item ${isSaved ? 'active' : ''}"><i data-feather="heart"></i> ${isSaved ? 'Guardado' : 'Guardar'}</button>
-                    <button class="card-btn btn-primary js-add-item" ${isAdded ? 'disabled' : ''}><i data-feather="plus"></i> ${isAdded ? 'Añadido' : 'Añadir'}</button>
+                    <button class="card-btn btn-primary js-add-item" ${isAdded ? 'disabled' : ''}>${isAdded ? 'Añadido' : 'Añadir'}</button>
                 </div></div></div>`;
     };
+    const renderPresupuestoView = () => { /* Similar a Proveedores */ };
 
     // --- MANEJO DE VISTAS Y MODALES ---
-    const switchView = (viewName) => {
-        document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
-        document.getElementById(`view-${viewName}`).classList.add('active');
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        document.querySelector(`.nav-link[data-view="${viewName}"]`).classList.add('active');
-    };
-    const modalContainer = document.getElementById('modal-container');
-    const openModal = (contentHTML) => { modalContainer.querySelector('#modal-body').innerHTML = contentHTML; modalContainer.classList.add('visible'); };
+    const switchView = (viewName) => { document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active')); document.getElementById(`view-${viewName}`).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); document.querySelector(`.nav-link[data-view="${viewName}"]`).classList.add('active'); };
+    const openModal = (title, bodyHTML) => { modalBody.innerHTML = `<h2>${title}</h2>${bodyHTML}`; modalContainer.classList.add('visible'); };
     const closeModal = () => modalContainer.classList.remove('visible');
 
     // --- EVENT LISTENERS ---
-    document.querySelectorAll('.nav-link').forEach(link => link.addEventListener('click', e => { e.preventDefault(); switchView(link.dataset.view); }));
-    document.getElementById('search-input').addEventListener('input', renderServices);
-    document.getElementById('event-details-form').addEventListener('submit', async e => { e.preventDefault(); eventState.eventName = document.getElementById('event-name').value; eventState.eventDate = document.getElementById('event-date').value; eventState.eventLocation = document.getElementById('event-location').value; await saveEventState(); alert("¡Detalles guardados!"); renderAll(); });
-    document.getElementById('edit-budget-btn').addEventListener('click', () => openModal(`<form id="budget-edit-form"><h2>Editar Presupuesto Total</h2><div class="form-group"><input type="number" id="new-budget" value="${eventState.budget.total}"></div><button type="submit" class="btn-primary">Guardar</button></form>`));
-    document.getElementById('add-task-form').addEventListener('submit', async e => { e.preventDefault(); const input = document.getElementById('new-task-input'); if(input.value) { eventState.checklist.push({ text: input.value, completed: false }); input.value = ''; await saveEventState(); renderAll(); } });
-    document.body.addEventListener('click', async e => {
-        const saveBtn = e.target.closest('.js-save-item');
-        const addBtn = e.target.closest('.js-add-item');
-        const checkTask = e.target.closest('input[type="checkbox"]');
-        const deleteTask = e.target.closest('.delete-task-btn');
-        if (saveBtn) { const id = saveBtn.closest('.service-card').dataset.id; const index = eventState.savedItems.indexOf(id); if (index > -1) { eventState.savedItems.splice(index, 1); } else { eventState.savedItems.push(id); } await saveEventState(); renderAll(); }
-        if (addBtn) { const id = addBtn.closest('.service-card').dataset.id; const service = allServices.find(s => s.id === id); if (service) { eventState.vendors.push({ id: service.id, name: service.name, price: service.price }); await saveEventState(); renderAll(); } }
-        if (checkTask) { const index = checkTask.dataset.index; eventState.checklist[index].completed = checkTask.checked; await saveEventState(); renderAll(); }
-        if (deleteTask) { const index = deleteTask.dataset.index; eventState.checklist.splice(index, 1); await saveEventState(); renderAll(); }
-    });
-    modalContainer.addEventListener('submit', async e => { if (e.target.id === 'budget-edit-form') { e.preventDefault(); const newTotal = parseFloat(document.getElementById('new-budget').value); if (newTotal > 0) { eventState.budget.total = newTotal; await saveEventState(); renderAll(); closeModal(); } } });
-    document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+    document.body.addEventListener('click', async (e) => {
+        const navLink = e.target.closest('.nav-link'); if (navLink) { e.preventDefault(); switchView(navLink.dataset.view); }
+        if (e.target.closest('#logout-btn')) { auth.signOut(); }
+        if (e.target.closest('#create-event-btn')) { await createNewEvent(); }
+        if (e.target.closest('#modal-close-btn') || e.target === modalContainer) { closeModal(); }
+        
+        const deleteEventBtn = e.target.closest('.js-delete-event');
+        if (deleteEventBtn) {
+            const eventId = deleteEventBtn.dataset.id;
+            const eventToDelete = userEvents.find(e => e.id === eventId);
+            if (confirm(`¿Estás seguro de que quieres eliminar el evento "${eventToDelete.eventName}"? Esta acción no se puede deshacer.`)) {
+                await deleteEvent(eventId);
+            }
+        }
+        
+        const selectEvent = e.target.closest('.js-select-event');
+        if (selectEvent && (!activeEvent || selectEvent.dataset.id !== activeEvent.id)) {
+            activeEvent = userEvents.find(event => event.id === selectEvent.dataset.id);
+            renderAll();
+        }
 
+        const editEventBtn = e.target.closest('.js-edit-event');
+        if (editEventBtn) {
+            const eventToEdit = userEvents.find(event => event.id === editEventBtn.dataset.id);
+            openModal('Editar Detalles del Evento', `<form id="event-details-form" data-id="${eventToEdit.id}"><div class="form-group"><label>Nombre</label><input type="text" id="modal-event-name" value="${eventToEdit.eventName}"></div><div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" id="modal-event-date" value="${eventToEdit.eventDate}"></div><div class="form-group"><label>Ubicación</label><input type="text" id="modal-event-location" value="${eventToEdit.eventLocation || ''}"></div></div><button type="submit" class="btn-primary">Guardar Cambios</button></form>`);
+        }
+        
+        const editBudgetBtn = e.target.closest('#edit-budget-btn');
+        if(editBudgetBtn && activeEvent){ openModal('Editar Presupuesto Total', `<form id="budget-edit-form"><div class="form-group"><label>Nuevo Presupuesto</label><input type="number" id="new-budget" value="${activeEvent.budget.total}"></div><button type="submit" class="btn-primary">Guardar</button></form>`); }
+        
+        const saveItemBtn = e.target.closest('.js-save-item');
+        if (saveItemBtn && activeEvent) { const serviceId = saveItemBtn.closest('.service-card').dataset.id; const index = activeEvent.savedItems.indexOf(serviceId); if (index > -1) { activeEvent.savedItems.splice(index, 1); } else { activeEvent.savedItems.push(serviceId); } await saveActiveEvent(); renderAll(); }
+        
+        const addItemBtn = e.target.closest('.js-add-item');
+        if(addItemBtn && !addItemBtn.disabled && activeEvent){ const serviceId = addItemBtn.closest('.service-card').dataset.id; const service = allServices.find(s => s.id === serviceId); if (service) { activeEvent.vendors.push({ id: service.id, name: service.name, price: service.price, providerName: service.providerName }); await saveActiveEvent(); renderAll(); } }
+        
+        const deleteVendorBtn = e.target.closest('.delete-vendor-btn');
+        if (deleteVendorBtn && activeEvent) { const vendorId = deleteVendorBtn.dataset.id; activeEvent.vendors = activeEvent.vendors.filter(v => v.id !== vendorId); await saveActiveEvent(); renderAll(); }
+    });
+
+    modalContainer.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (e.target.id === 'event-details-form') {
+            const eventId = e.target.dataset.id; const eventToUpdate = userEvents.find(event => event.id === eventId);
+            if(eventToUpdate){
+                eventToUpdate.eventName = document.getElementById('modal-event-name').value;
+                eventToUpdate.eventDate = document.getElementById('modal-event-date').value;
+                eventToUpdate.eventLocation = document.getElementById('modal-event-location').value;
+                activeEvent = eventToUpdate; await saveActiveEvent(); renderAll(); closeModal();
+            }
+        }
+        if (e.target.id === 'budget-edit-form') {
+            const newTotal = parseFloat(document.getElementById('new-budget').value);
+            if (activeEvent && newTotal >= 0) { activeEvent.budget.total = newTotal; await saveActiveEvent(); renderAll(); closeModal(); }
+        }
+    });
+    
     // --- INICIALIZACIÓN DE LA APP ---
-    async function init() {
-        await loadEventState();
-        await fetchServices();
-        renderAll();
-    }
+    const initApp = async () => {
+        try {
+            await Promise.all([fetchServices(), loadUserEvents()]);
+            renderAll();
+        } catch (error) {
+            console.error("ERROR CRÍTICO AL INICIALIZAR LA APP:", error);
+            document.querySelector('.main-content').innerHTML = `<h1>Oops! Algo salió mal.</h1><p>No se pudieron cargar los datos. Revisa la consola (F12) para ver los errores y asegúrate de que el índice de Firestore esté creado.</p>`;
+        }
+    };
 });
