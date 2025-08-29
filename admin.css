@@ -16,3 +16,20 @@ form input, form select { width: 100%; padding: 12px; margin-bottom: 15px; borde
 .ticket-item strong {
     color: var(--primary-color);
 }
+
+/* V ESTILOS NUEVOS PARA EL CHECKBOX V */
+.form-group-checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.form-group-checkbox input[type="checkbox"] {
+    width: auto; /* Anula el width: 100% para los checkboxes */
+    margin: 0 10px 0 0; /* Espacio entre el checkbox y el texto */
+}
+
+.form-group-checkbox label {
+    margin: 0;
+    font-weight: 500;
+}

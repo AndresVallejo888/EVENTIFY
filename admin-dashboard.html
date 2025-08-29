@@ -30,6 +30,9 @@
                             <option value="" disabled selected>-- Selecciona categoría --</option>
                             <option value="comida-bebida">Comida y Bebida</option>
                             <option value="musica-entretenimiento">Música y Entretenimiento</option>
+                            <option value="fotografia-video">Fotografía y Video</option>
+                            <option value="decoracion-ambientacion">Decoración y Ambientación</option>
+                            <option value="extras-experiencias">Extras y Experiencias</option>
                             </select>
                         <select id="pricing-model" required>
                             <option value="" disabled selected>-- Selecciona modelo de precio --</option>
@@ -37,6 +40,12 @@
                             <option value="perPerson">Por Persona</option>
                             <option value="perHour">Por Hora</option>
                         </select>
+                        
+                        <div class="form-group-checkbox">
+                            <input type="checkbox" id="service-requires-note">
+                            <label for="service-requires-note">¿Es obligatorio que el usuario añada una nota al contratar?</label>
+                        </div>
+                        
                         <button type="submit" class="btn-primary">Añadir Servicio</button>
                     </form>
                 </div>

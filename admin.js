@@ -49,7 +49,8 @@ const handleAddServiceForm = () => {
             image: document.getElementById('service-image').value,
             category: categoryOption.value,
             categoryTitle: categoryOption.options[categoryOption.selectedIndex].text,
-            pricingModel: document.getElementById('pricing-model').value
+            pricingModel: document.getElementById('pricing-model').value,
+            requiresNote: document.getElementById('service-requires-note').checked
         };
 
         try {
@@ -77,7 +78,7 @@ auth.onAuthStateChanged(async user => {
             window.location.href = 'index.html';
         }
     } else {
-        window.location.href = 'index.html'; // También redirige a index si no hay sesión
+        window.location.href = 'index.html';
     }
 });
 
@@ -96,7 +97,6 @@ const initializeApp = () => {
     if (logoutButton) {
         logoutButton.addEventListener('click', () => {
             auth.signOut().then(() => {
-                // <-- ESTA ES LA LÍNEA CORREGIDA
                 window.location.href = 'index.html'; 
             });
         });
