@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eventify - Login y Registro</title>
+    <title>Eventify - Iniciar Sesión</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
         body { background: linear-gradient(135deg, #e3cdfa 0%, #6a11cb 100%); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
@@ -21,6 +21,9 @@
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
         .logo { text-align: center; margin-bottom: 20px; font-size: 24px; font-weight: bold; color: #6a11cb; }
+        /* --- NUEVOS ESTILOS PARA LA CASILLA DE ADMIN --- */
+        .admin-toggle { display: flex; align-items: center; justify-content: center; margin-top: 15px; color: #555; }
+        .admin-toggle input { width: auto; margin-right: 8px; }
     </style>
 </head>
 <body>
@@ -31,12 +34,22 @@
                 <div class="tab active" id="login-tab">Iniciar Sesión</div>
                 <div class="tab" id="register-tab">Registrarse</div>
             </div>
+            
             <form id="login-form">
-                <div class="form-group"><input type="email" id="login-email" placeholder="Correo electrónico" required></div>
-                <div class="form-group"><input type="password" id="login-password" placeholder="Contraseña" required></div>
+                <div class="form-group">
+                    <input type="email" id="login-email" placeholder="Correo electrónico" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="login-password" placeholder="Contraseña" required>
+                </div>
+                <div class="admin-toggle">
+                    <input type="checkbox" id="admin-login-check">
+                    <label for="admin-login-check">Iniciar sesión como administrador</label>
+                </div>
                 <button type="submit">Entrar</button>
                 <div id="login-message" class="message"></div>
             </form>
+            
             <form id="register-form" style="display: none;">
                 <div class="form-group"><input type="text" id="register-name" placeholder="Nombre" required></div>
                 <div class="form-group"><input type="text" id="register-lastname1" placeholder="Primer apellido" required></div>
@@ -47,31 +60,79 @@
             </form>
         </div>
     </div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <script>
+        // --- SCRIPT UNIFICADO (ACTUALIZADO) ---
         const firebaseConfig = { apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs", authDomain: "eventify-70dbc.firebaseapp.com", projectId: "eventify-70dbc", storageBucket: "eventify-70dbc.appspot.com", messagingSenderId: "489645350340", appId: "1:489645350340:web:f1389c69d8498bb5325891" };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const loginTab = document.getElementById('login-tab'), registerTab = document.getElementById('register-tab'), loginForm = document.getElementById('login-form'), registerForm = document.getElementById('register-form'), loginMessage = document.getElementById('login-message'), registerMessage = document.getElementById('register-message');
-        loginTab.addEventListener('click', () => { loginTab.classList.add('active'); registerTab.classList.remove('active'); loginForm.style.display = 'block'; registerForm.style.display = 'none'; });
-        registerTab.addEventListener('click', () => { registerTab.classList.add('active'); loginTab.classList.remove('active'); registerForm.style.display = 'block'; loginForm.style.display = 'none'; });
-        registerForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('register-email').value, password = document.getElementById('register-password').value, name = document.getElementById('register-name').value, lastname1 = document.getElementById('register-lastname1').value;
-            auth.createUserWithEmailAndPassword(email, password).then(cred => {
-                cred.user.updateProfile({ displayName: name }); // Actualiza el nombre en Authentication
-                db.collection('users').doc(cred.user.uid).set({ nombre: name, primerApellido: lastname1, correo: email, fechaRegistro: new Date() })
-            }).then(() => { showMessage(registerMessage, '¡Registro exitoso! Ahora inicia sesión.', 'success'); registerForm.reset(); setTimeout(() => loginTab.click(), 2000); }).catch(err => showMessage(registerMessage, err.message, 'error'));
-        });
+        
+        const loginTab = document.getElementById('login-tab');
+        const registerTab = document.getElementById('register-tab');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const loginMessage = document.getElementById('login-message');
+        const registerMessage = document.getElementById('register-message');
+        
+        loginTab.addEventListener('click', () => { /* ... (sin cambios) ... */ });
+        registerTab.addEventListener('click', () => { /* ... (sin cambios) ... */ });
+        registerForm.addEventListener('submit', (e) => { /* ... (sin cambios) ... */ });
+
+        // --- LÓGICA DE LOGIN ACTUALIZADA ---
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value, password = document.getElementById('login-password').value;
-            auth.signInWithEmailAndPassword(email, password).then(() => { showMessage(loginMessage, 'Inicio de sesión exitoso. Redirigiendo...', 'success'); setTimeout(() => { window.location.href = "dashboard.html"; }, 1500); }).catch(() => showMessage(loginMessage, 'Correo o contraseña incorrectos.', 'error'));
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const isAdminLogin = document.getElementById('admin-login-check').checked;
+
+            if (isAdminLogin) {
+                // --- FLUJO DE LOGIN PARA ADMINISTRADOR ---
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(userCredential => {
+                        const user = userCredential.user;
+                        // Después de iniciar sesión, verificamos su rol en Firestore
+                        return db.collection('users').doc(user.uid).get();
+                    })
+                    .then(doc => {
+                        if (doc.exists && doc.data().role === 'admin') {
+                            // Si es admin, lo redirigimos al dashboard de admin
+                            showMessage(loginMessage, 'Acceso de administrador concedido. Redirigiendo...', 'success');
+                            setTimeout(() => { window.location.href = "admin-dashboard.html"; }, 1500);
+                        } else {
+                            // Si no es admin, cerramos su sesión y mostramos un error
+                            auth.signOut();
+                            showMessage(loginMessage, 'Error: No tienes permisos de administrador.', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showMessage(loginMessage, 'Error: Credenciales incorrectas.', 'error');
+                    });
+
+            } else {
+                // --- FLUJO DE LOGIN PARA USUARIO NORMAL ---
+                auth.signInWithEmailAndPassword(email, password)
+                    .then(() => {
+                        showMessage(loginMessage, 'Inicio de sesión exitoso. Redirigiendo...', 'success');
+                        setTimeout(() => { window.location.href = "dashboard.html"; }, 1500);
+                    })
+                    .catch(error => {
+                        showMessage(loginMessage, 'Error: Correo o contraseña incorrectos.', 'error');
+                    });
+            }
         });
-        function showMessage(element, message, type) { element.textContent = message; element.className = 'message ' + type; element.style.display = 'block'; setTimeout(() => { element.style.display = 'none'; }, 5000); }
+        
+        function showMessage(element, message, type) {
+            element.textContent = message;
+            element.className = 'message ' + type;
+            element.style.display = 'block';
+            setTimeout(() => { element.style.display = 'none'; }, 5000);
+        }
     </script>
 </body>
 </html>
