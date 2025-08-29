@@ -42,6 +42,10 @@
                 <div class="form-group">
                     <input type="password" id="login-password" placeholder="Contraseña" required>
                 </div>
+                <!-- NUEVO: Enlace para "Olvidé mi contraseña" -->
+                <div style="text-align:center; margin-bottom: 8px;">
+                    <a href="#" id="forgot-password-link" style="color:#6a11cb; font-size: 14px; text-decoration: underline; cursor:pointer;">¿Olvidaste tu contraseña?</a>
+                </div>
                 <div class="admin-toggle">
                     <input type="checkbox" id="admin-login-check">
                     <label for="admin-login-check">Iniciar sesión como administrador</label>
@@ -79,9 +83,56 @@
         const loginMessage = document.getElementById('login-message');
         const registerMessage = document.getElementById('register-message');
         
-        loginTab.addEventListener('click', () => { /* ... (sin cambios) ... */ });
-        registerTab.addEventListener('click', () => { /* ... (sin cambios) ... */ });
-        registerForm.addEventListener('submit', (e) => { /* ... (sin cambios) ... */ });
+        // --- CAMBIO: Lógica de tabs para mostrar/ocultar formularios ---
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('active');
+            registerTab.classList.remove('active');
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            loginMessage.style.display = 'none';
+            registerMessage.style.display = 'none';
+        });
+        registerTab.addEventListener('click', () => {
+            registerTab.classList.add('active');
+            loginTab.classList.remove('active');
+            registerForm.style.display = 'block';
+            loginForm.style.display = 'none';
+            loginMessage.style.display = 'none';
+            registerMessage.style.display = 'none';
+        });
+
+        // --- LÓGICA DE REGISTRO ---
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const lastname1 = document.getElementById('register-lastname1').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            if (password.length < 6) {
+                showMessage(registerMessage, 'La contraseña debe tener al menos 6 caracteres.', 'error');
+                return;
+            }
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    const user = userCredential.user;
+                    // Guardar datos adicionales en Firestore
+                    return db.collection('users').doc(user.uid).set({
+                        name: name,
+                        lastname1: lastname1,
+                        email: email,
+                        role: 'user'
+                    });
+                })
+                .then(() => {
+                    showMessage(registerMessage, 'Registro exitoso. Ahora puedes iniciar sesión.', 'success');
+                    registerForm.reset();
+                })
+                .catch(error => {
+                    showMessage(registerMessage, 'Error al registrar: ' + error.message, 'error');
+                });
+        });
 
         // --- LÓGICA DE LOGIN ACTUALIZADA ---
         loginForm.addEventListener('submit', (e) => {
@@ -127,6 +178,23 @@
             }
         });
         
+        // --- FUNCIÓN OLVIDÉ MI CONTRASEÑA ---
+        document.getElementById('forgot-password-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            if (!email) {
+                showMessage(loginMessage, 'Por favor, ingresa tu correo electrónico para restablecer la contraseña.', 'error');
+                return;
+            }
+            auth.sendPasswordResetEmail(email)
+                .then(() => {
+                    showMessage(loginMessage, 'Se ha enviado un enlace para restablecer tu contraseña a tu correo.', 'success');
+                })
+                .catch(error => {
+                    showMessage(loginMessage, 'No se pudo enviar el correo de recuperación. Verifica el correo ingresado.', 'error');
+                });
+        });
+
         function showMessage(element, message, type) {
             element.textContent = message;
             element.className = 'message ' + type;
