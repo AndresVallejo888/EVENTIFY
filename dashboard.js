@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
             userId: currentUser.uid, 
             eventName: "Nuevo Evento", 
             eventDate: "", 
+            eventStartTime: "",
+            eventEndTime: "",
             eventLocation: "", 
             eventTheme: "",
             guestCount: 50,
@@ -76,11 +78,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- LÓGICA DE CÁLCULO DE PRECIOS ---
-    const calculateServicePrice = (service, guestCount = 50) => {
+    const getVendorCost = (vendor, event) => {
+        const service = allServices.find(s => s.id === vendor.id);
+        if (!service || !event) return 0;
+
         switch(service.pricingModel) {
-            case 'perPerson': return service.basePrice * guestCount;
-            case 'perHour': return service.basePrice * 4; // Asumimos 4 horas por defecto
-            default: return service.basePrice; // flat
+            case 'perHour':
+                return service.basePrice * (vendor.duration || 1);
+            case 'perPerson':
+                return service.basePrice * (event.guestCount || 50);
+            case 'flat':
+            default:
+                return service.basePrice;
         }
     };
 
@@ -100,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('vendors-count').textContent = '...';
             return;
         }
-        const spent = activeEvent.vendors.reduce((sum, v) => sum + v.price, 0);
+        const spent = activeEvent.vendors.reduce((sum, v) => sum + getVendorCost(v, activeEvent), 0);
         activeEvent.budget.spent = spent;
         const remaining = activeEvent.budget.total - spent;
         document.getElementById('active-event-title').textContent = activeEvent.eventName;
@@ -125,13 +134,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const renderProveedoresView = () => {
         const container = document.getElementById('vendors-list-content');
-        if (!activeEvent) { 
-            container.innerHTML = "<p>Selecciona un evento para ver sus proveedores.</p>"; 
-            return; 
-        }
+        if (!activeEvent) { container.innerHTML = "<p>Selecciona un evento para ver sus proveedores.</p>"; return; }
 
         const vendorsHTML = activeEvent.vendors.map(vendor => {
+            const service = allServices.find(s => s.id === vendor.id);
+            const finalPrice = getVendorCost(vendor, activeEvent);
             const noteHTML = vendor.notes ? `<small class="vendor-note">Nota: ${vendor.notes}</small>` : '';
+
+            let durationHTML = '';
+            if (service && service.pricingModel === 'perHour') {
+                durationHTML = `
+                    <div class="duration-control">
+                        <input type="number" class="js-update-duration" data-id="${vendor.id}" value="${vendor.duration || 1}" min="1">
+                        <span>hrs</span>
+                    </div>
+                `;
+            }
+
             return `
                 <li>
                     <div class="vendor-info">
@@ -139,7 +158,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${noteHTML}
                     </div>
                     <div class="vendor-actions">
-                        <span class="vendor-price">$${vendor.price.toLocaleString()}</span>
+                        <span class="vendor-price">$${finalPrice.toLocaleString()}</span>
+                        ${durationHTML}
                         <button class="btn-secondary btn-small js-edit-note" data-id="${vendor.id}">Nota</button>
                         <button class="delete-vendor-btn" data-id="${vendor.id}" title="Eliminar proveedor"><i data-feather="x-circle"></i></button>
                     </div>
@@ -186,7 +206,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const total = activeEvent.budget.total || 0;
-        const spent = activeEvent.budget.spent || 0;
+        const spent = activeEvent.vendors.reduce((sum, v) => sum + getVendorCost(v, activeEvent), 0);
+        activeEvent.budget.spent = spent;
         const remaining = total - spent;
         const percentage = total > 0 ? (spent / total) * 100 : 0;
 
@@ -194,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ? activeEvent.vendors.map(vendor => `
                 <li>
                     <span><strong>${vendor.name}</strong><br><small>${vendor.providerName}</small></span>
-                    <span>$${vendor.price.toLocaleString()}</span>
+                    <span>$${getVendorCost(vendor, activeEvent).toLocaleString()}</span>
                 </li>
             `).join('')
             : '<li>Aún no has contratado servicios.</li>';
@@ -223,12 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const renderCartModal = () => {
         if (!activeEvent) return;
-        let subtotal = 0;
+        let subtotal = activeEvent.vendors.reduce((sum, v) => sum + getVendorCost(v, activeEvent), 0);
         const itemsHTML = activeEvent.vendors.map(vendor => {
-            const service = allServices.find(s => s.id === vendor.id);
-            const finalPrice = calculateServicePrice(service, activeEvent.guestCount);
-            subtotal += finalPrice;
-            return `<div class="cart-item"><span>${vendor.name}</span><span>$${finalPrice.toLocaleString()}</span></div>`;
+            return `<div class="cart-item"><span>${vendor.name}</span><span>$${getVendorCost(vendor, activeEvent).toLocaleString()}</span></div>`;
         }).join('');
         const iva = subtotal * 0.16;
         const total = subtotal + iva;
@@ -255,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.closest('#modal-close-btn') || e.target === modalContainer) { closeModal(); }
         
         if (e.target.id === 'generate-payment-btn' && activeEvent) {
-            const subtotal = activeEvent.vendors.reduce((sum, v) => calculateServicePrice(allServices.find(s => s.id === v.id), activeEvent.guestCount) + sum, 0);
+            const subtotal = activeEvent.vendors.reduce((sum, v) => getVendorCost(v, activeEvent), 0);
             const total = subtotal * 1.16;
             await createTicket(total);
             renderPaymentSlipModal(total);
@@ -279,7 +297,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const editEventBtn = e.target.closest('.js-edit-event');
         if (editEventBtn) {
             const eventToEdit = userEvents.find(event => event.id === editEventBtn.dataset.id);
-            openModal('Editar Detalles del Evento', `<form id="event-details-form" data-id="${eventToEdit.id}"><div class="form-group"><label>Nombre del Evento</label><input type="text" id="modal-event-name" value="${eventToEdit.eventName}"></div><div class="form-group"><label>Temática del Evento</label><input type="text" id="modal-event-theme" value="${eventToEdit.eventTheme || ''}" placeholder="Ej: Boda campestre, Fiesta de los 80s..."></div><div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" id="modal-event-date" value="${eventToEdit.eventDate}"></div><div class="form-group"><label>Invitados</label><input type="number" id="modal-guest-count" value="${eventToEdit.guestCount || 50}"></div></div><div class="form-group"><label>Ubicación</label><input type="text" id="modal-event-location" value="${eventToEdit.eventLocation || ''}"></div><button type="submit" class="btn-primary">Guardar Cambios</button></form>`);
+            openModal('Editar Detalles del Evento', `<form id="event-details-form" data-id="${eventToEdit.id}">
+                <div class="form-group"><label>Nombre del Evento</label><input type="text" id="modal-event-name" value="${eventToEdit.eventName}"></div>
+                <div class="form-group"><label>Temática del Evento</label><input type="text" id="modal-event-theme" value="${eventToEdit.eventTheme || ''}"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Fecha</label><input type="date" id="modal-event-date" value="${eventToEdit.eventDate || ''}"></div>
+                    <div class="form-group"><label>Invitados</label><input type="number" id="modal-guest-count" value="${eventToEdit.guestCount || 50}"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Hora de Inicio</label><input type="time" id="modal-event-start-time" value="${eventToEdit.eventStartTime || ''}"></div>
+                    <div class="form-group"><label>Hora de Fin</label><input type="time" id="modal-event-end-time" value="${eventToEdit.eventEndTime || ''}"></div>
+                </div>
+                <div class="form-group"><label>Ubicación</label><input type="text" id="modal-event-location" value="${eventToEdit.eventLocation || ''}"></div>
+                <button type="submit" class="btn-primary">Guardar Cambios</button>
+            </form>`);
         }
         
         const editBudgetBtn = e.target.closest('#edit-budget-btn');
@@ -289,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saveItemBtn && activeEvent) { const serviceId = saveItemBtn.closest('.service-card').dataset.id; const index = activeEvent.savedItems.indexOf(serviceId); if (index > -1) { activeEvent.savedItems.splice(index, 1); } else { activeEvent.savedItems.push(serviceId); } await saveActiveEvent(); renderAll(); }
         
         const addItemBtn = e.target.closest('.js-add-item');
-        if(addItemBtn && !addItemBtn.disabled && activeEvent){ const serviceId = addItemBtn.closest('.service-card').dataset.id; const service = allServices.find(s => s.id === serviceId); if (service) { activeEvent.vendors.push({ id: service.id, name: service.name, price: service.basePrice, providerName: service.providerName, notes: '' }); await saveActiveEvent(); renderAll(); } }
+        if(addItemBtn && !addItemBtn.disabled && activeEvent){ const serviceId = addItemBtn.closest('.service-card').dataset.id; const service = allServices.find(s => s.id === serviceId); if (service) { activeEvent.vendors.push({ id: service.id, name: service.name, price: service.basePrice, providerName: service.providerName, notes: '', duration: 1 }); await saveActiveEvent(); renderAll(); } }
         
         const deleteVendorBtn = e.target.closest('.delete-vendor-btn');
         if (deleteVendorBtn && activeEvent) { const vendorId = deleteVendorBtn.dataset.id; activeEvent.vendors = activeEvent.vendors.filter(v => v.id !== vendorId); await saveActiveEvent(); renderAll(); }
@@ -314,17 +345,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('search-input').addEventListener('input', renderServices);
 
+    document.body.addEventListener('change', async (e) => {
+        if (e.target.classList.contains('js-update-duration')) {
+            const vendorId = e.target.dataset.id;
+            const newDuration = parseInt(e.target.value, 10);
+            if (activeEvent && newDuration > 0) {
+                const vendorToUpdate = activeEvent.vendors.find(v => v.id === vendorId);
+                if (vendorToUpdate) {
+                    vendorToUpdate.duration = newDuration;
+                    await saveActiveEvent();
+                    renderAll();
+                }
+            }
+        }
+    });
+
     modalContainer.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (e.target.id === 'event-details-form') {
-            const eventId = e.target.dataset.id; const eventToUpdate = userEvents.find(event => event.id === eventId);
+            const eventId = e.target.dataset.id; 
+            const eventToUpdate = userEvents.find(event => event.id === eventId);
             if(eventToUpdate){
                 eventToUpdate.eventName = document.getElementById('modal-event-name').value;
                 eventToUpdate.eventTheme = document.getElementById('modal-event-theme').value;
                 eventToUpdate.eventDate = document.getElementById('modal-event-date').value;
+                eventToUpdate.eventStartTime = document.getElementById('modal-event-start-time').value;
+                eventToUpdate.eventEndTime = document.getElementById('modal-event-end-time').value;
                 eventToUpdate.eventLocation = document.getElementById('modal-event-location').value;
                 eventToUpdate.guestCount = parseInt(document.getElementById('modal-guest-count').value, 10);
-                activeEvent = eventToUpdate; await saveActiveEvent(); renderAll(); closeModal();
+                activeEvent = eventToUpdate; 
+                await saveActiveEvent(); 
+                renderAll(); 
+                closeModal();
             }
         }
         if (e.target.id === 'budget-edit-form') {
@@ -353,4 +405,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector('.main-content').innerHTML = `<h1>Oops! Algo salió mal.</h1><p>No se pudieron cargar los datos. Revisa la consola (F12) para ver los errores y asegúrate de que el índice de Firestore esté creado.</p>`;
         }
     };
+
+   
 });
