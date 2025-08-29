@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             eventName: "Nuevo Evento", 
             eventDate: "", 
             eventLocation: "", 
-            eventTheme: "", // <-- CAMBIO APLICADO
+            eventTheme: "",
             guestCount: 50,
             budget: { total: 100000, spent: 0 }, 
             vendors: [], 
@@ -125,11 +125,29 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const renderProveedoresView = () => {
         const container = document.getElementById('vendors-list-content');
-        if (!activeEvent) { container.innerHTML = "<p>Selecciona un evento para ver sus proveedores.</p>"; return; }
-        container.innerHTML = `<ul class="vendor-list">${activeEvent.vendors.map(vendor => `
-            <li><span><strong>${vendor.name}</strong><br><small>${vendor.providerName}</small></span>
-            <span>$${vendor.price.toLocaleString()}</span><button class="delete-vendor-btn" data-id="${vendor.id}"><i data-feather="x-circle"></i></button></li>
-        `).join('') || '<li>No has contratado proveedores para este evento.</li>'}</ul>`;
+        if (!activeEvent) { 
+            container.innerHTML = "<p>Selecciona un evento para ver sus proveedores.</p>"; 
+            return; 
+        }
+
+        const vendorsHTML = activeEvent.vendors.map(vendor => {
+            const noteHTML = vendor.notes ? `<small class="vendor-note">Nota: ${vendor.notes}</small>` : '';
+            return `
+                <li>
+                    <div class="vendor-info">
+                        <span><strong>${vendor.name}</strong><br><small>${vendor.providerName}</small></span>
+                        ${noteHTML}
+                    </div>
+                    <div class="vendor-actions">
+                        <span class="vendor-price">$${vendor.price.toLocaleString()}</span>
+                        <button class="btn-secondary btn-small js-edit-note" data-id="${vendor.id}">Nota</button>
+                        <button class="delete-vendor-btn" data-id="${vendor.id}" title="Eliminar proveedor"><i data-feather="x-circle"></i></button>
+                    </div>
+                </li>
+            `;
+        }).join('') || '<li>No has contratado proveedores para este evento.</li>';
+        
+        container.innerHTML = `<ul class="vendor-list">${vendorsHTML}</ul>`;
     };
     const renderGuardadosView = () => {
         const container = document.getElementById('saved-items-content');
@@ -160,7 +178,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="card-btn btn-primary js-add-item" ${isAdded ? 'disabled' : ''}>${isAdded ? 'Añadido' : 'Añadir'}</button>
                 </div></div></div>`;
     };
-    const renderPresupuestoView = () => { /* Similar a Proveedores */ };
+    const renderPresupuestoView = () => {
+        const container = document.getElementById('budget-details-content');
+        if (!activeEvent) {
+            container.innerHTML = "<p>Selecciona un evento para ver el detalle del presupuesto.</p>";
+            return;
+        }
+
+        const total = activeEvent.budget.total || 0;
+        const spent = activeEvent.budget.spent || 0;
+        const remaining = total - spent;
+        const percentage = total > 0 ? (spent / total) * 100 : 0;
+
+        const vendorsHTML = activeEvent.vendors.length > 0
+            ? activeEvent.vendors.map(vendor => `
+                <li>
+                    <span><strong>${vendor.name}</strong><br><small>${vendor.providerName}</small></span>
+                    <span>$${vendor.price.toLocaleString()}</span>
+                </li>
+            `).join('')
+            : '<li>Aún no has contratado servicios.</li>';
+
+        container.innerHTML = `
+            <div class="budget-summary">
+                <div class="summary-item">
+                    <h4>Presupuesto Total</h4>
+                    <p>$${total.toLocaleString()}</p>
+                </div>
+                <div class="summary-item">
+                    <h4>Gastado</h4>
+                    <p class="spent-text">$${spent.toLocaleString()}</p>
+                </div>
+                <div class="summary-item">
+                    <h4>Restante</h4>
+                    <p class="remaining-text">$${remaining.toLocaleString()}</p>
+                </div>
+            </div>
+            <div class="progress-bar" style="margin-top: 20px; margin-bottom: 30px;">
+                <div class="progress" style="width: ${percentage}%;"></div>
+            </div>
+            <h3>Desglose de Gastos</h3>
+            <ul class="vendor-list">${vendorsHTML}</ul>
+        `;
+    };
     const renderCartModal = () => {
         if (!activeEvent) return;
         let subtotal = 0;
@@ -219,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const editEventBtn = e.target.closest('.js-edit-event');
         if (editEventBtn) {
             const eventToEdit = userEvents.find(event => event.id === editEventBtn.dataset.id);
-            // <-- CAMBIO APLICADO
             openModal('Editar Detalles del Evento', `<form id="event-details-form" data-id="${eventToEdit.id}"><div class="form-group"><label>Nombre del Evento</label><input type="text" id="modal-event-name" value="${eventToEdit.eventName}"></div><div class="form-group"><label>Temática del Evento</label><input type="text" id="modal-event-theme" value="${eventToEdit.eventTheme || ''}" placeholder="Ej: Boda campestre, Fiesta de los 80s..."></div><div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" id="modal-event-date" value="${eventToEdit.eventDate}"></div><div class="form-group"><label>Invitados</label><input type="number" id="modal-guest-count" value="${eventToEdit.guestCount || 50}"></div></div><div class="form-group"><label>Ubicación</label><input type="text" id="modal-event-location" value="${eventToEdit.eventLocation || ''}"></div><button type="submit" class="btn-primary">Guardar Cambios</button></form>`);
         }
         
@@ -230,10 +289,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saveItemBtn && activeEvent) { const serviceId = saveItemBtn.closest('.service-card').dataset.id; const index = activeEvent.savedItems.indexOf(serviceId); if (index > -1) { activeEvent.savedItems.splice(index, 1); } else { activeEvent.savedItems.push(serviceId); } await saveActiveEvent(); renderAll(); }
         
         const addItemBtn = e.target.closest('.js-add-item');
-        if(addItemBtn && !addItemBtn.disabled && activeEvent){ const serviceId = addItemBtn.closest('.service-card').dataset.id; const service = allServices.find(s => s.id === serviceId); if (service) { activeEvent.vendors.push({ id: service.id, name: service.name, price: service.basePrice, providerName: service.providerName }); await saveActiveEvent(); renderAll(); } }
+        if(addItemBtn && !addItemBtn.disabled && activeEvent){ const serviceId = addItemBtn.closest('.service-card').dataset.id; const service = allServices.find(s => s.id === serviceId); if (service) { activeEvent.vendors.push({ id: service.id, name: service.name, price: service.basePrice, providerName: service.providerName, notes: '' }); await saveActiveEvent(); renderAll(); } }
         
         const deleteVendorBtn = e.target.closest('.delete-vendor-btn');
         if (deleteVendorBtn && activeEvent) { const vendorId = deleteVendorBtn.dataset.id; activeEvent.vendors = activeEvent.vendors.filter(v => v.id !== vendorId); await saveActiveEvent(); renderAll(); }
+
+        const editNoteBtn = e.target.closest('.js-edit-note');
+        if (editNoteBtn && activeEvent) {
+            const vendorId = editNoteBtn.dataset.id;
+            const vendorToEdit = activeEvent.vendors.find(v => v.id === vendorId);
+            if (vendorToEdit) {
+                openModal(`Nota para ${vendorToEdit.name}`, `
+                    <form id="vendor-note-form" data-id="${vendorId}">
+                        <div class="form-group">
+                            <label for="modal-vendor-note">Escribe tus apuntes, acuerdos o recordatorios:</label>
+                            <textarea id="modal-vendor-note" rows="5" class="form-control-textarea">${vendorToEdit.notes || ''}</textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">Guardar Nota</button>
+                    </form>
+                `);
+            }
+        }
     });
 
     document.getElementById('search-input').addEventListener('input', renderServices);
@@ -244,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const eventId = e.target.dataset.id; const eventToUpdate = userEvents.find(event => event.id === eventId);
             if(eventToUpdate){
                 eventToUpdate.eventName = document.getElementById('modal-event-name').value;
-                eventToUpdate.eventTheme = document.getElementById('modal-event-theme').value; // <-- CAMBIO APLICADO
+                eventToUpdate.eventTheme = document.getElementById('modal-event-theme').value;
                 eventToUpdate.eventDate = document.getElementById('modal-event-date').value;
                 eventToUpdate.eventLocation = document.getElementById('modal-event-location').value;
                 eventToUpdate.guestCount = parseInt(document.getElementById('modal-guest-count').value, 10);
@@ -254,6 +330,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'budget-edit-form') {
             const newTotal = parseFloat(document.getElementById('new-budget').value);
             if (activeEvent && newTotal >= 0) { activeEvent.budget.total = newTotal; await saveActiveEvent(); renderAll(); closeModal(); }
+        }
+        if (e.target.id === 'vendor-note-form') {
+            const vendorId = e.target.dataset.id;
+            const vendorToUpdate = activeEvent.vendors.find(v => v.id === vendorId);
+            if (vendorToUpdate) {
+                vendorToUpdate.notes = document.getElementById('modal-vendor-note').value;
+                await saveActiveEvent();
+                renderAll();
+                closeModal();
+            }
         }
     });
     

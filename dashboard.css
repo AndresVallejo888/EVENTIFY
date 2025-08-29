@@ -78,3 +78,63 @@ body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--back
 .payment-slip { border: 1px solid var(--border-color); padding: 20px; border-radius: var(--border-radius); margin-top: 20px; }
 .payment-slip h3 { margin-top: 0; }
 .payment-slip p { margin: 5px 0; }
+.budget-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+.summary-item h4 {
+    margin: 0 0 8px;
+    color: var(--text-light);
+    font-weight: 500;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+.summary-item p {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+.summary-item .spent-text {
+    color: #EF4444; /* Rojo */
+}
+.summary-item .remaining-text {
+    color: #10B981; /* Verde */
+}
+.vendor-info {
+    flex-grow: 1;
+    margin-right: 16px;
+}
+.vendor-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.vendor-price {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-dark);
+}
+.vendor-note {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-light);
+    font-style: italic;
+    font-size: 13px;
+    white-space: pre-wrap;
+}
+.form-control-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    resize: vertical;
+    min-height: 100px;
+}
