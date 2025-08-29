@@ -36,8 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const createNewEvent = async () => {
         const newEventData = {
-            userId: currentUser.uid, eventName: "Nuevo Evento", eventDate: "", eventLocation: "", guestCount: 50,
-            budget: { total: 100000, spent: 0 }, vendors: [], savedItems: []
+            userId: currentUser.uid, 
+            eventName: "Nuevo Evento", 
+            eventDate: "", 
+            eventLocation: "", 
+            eventTheme: "", // <-- CAMBIO APLICADO
+            guestCount: 50,
+            budget: { total: 100000, spent: 0 }, 
+            vendors: [], 
+            savedItems: []
         };
         const docRef = await db.collection('events').add(newEventData);
         const newEvent = { id: docRef.id, ...newEventData };
@@ -58,8 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const createTicket = async (total) => {
         if (!activeEvent) return;
         const ticketData = {
-            userId: currentUser.uid, userEmail: currentUser.email, eventName: activeEvent.eventName,
-            total: total, timestamp: new Date(), vendors: activeEvent.vendors
+            userId: currentUser.uid, 
+            userEmail: currentUser.email, 
+            eventName: activeEvent.eventName,
+            total: total, 
+            timestamp: new Date(), 
+            vendors: activeEvent.vendors
         };
         await db.collection('tickets').add(ticketData);
     };
@@ -208,7 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const editEventBtn = e.target.closest('.js-edit-event');
         if (editEventBtn) {
             const eventToEdit = userEvents.find(event => event.id === editEventBtn.dataset.id);
-            openModal('Editar Detalles del Evento', `<form id="event-details-form" data-id="${eventToEdit.id}"><div class="form-group"><label>Nombre del Evento</label><input type="text" id="modal-event-name" value="${eventToEdit.eventName}"></div><div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" id="modal-event-date" value="${eventToEdit.eventDate}"></div><div class="form-group"><label>Invitados</label><input type="number" id="modal-guest-count" value="${eventToEdit.guestCount || 50}"></div></div><div class="form-group"><label>Ubicación</label><input type="text" id="modal-event-location" value="${eventToEdit.eventLocation || ''}"></div><button type="submit" class="btn-primary">Guardar Cambios</button></form>`);
+            // <-- CAMBIO APLICADO
+            openModal('Editar Detalles del Evento', `<form id="event-details-form" data-id="${eventToEdit.id}"><div class="form-group"><label>Nombre del Evento</label><input type="text" id="modal-event-name" value="${eventToEdit.eventName}"></div><div class="form-group"><label>Temática del Evento</label><input type="text" id="modal-event-theme" value="${eventToEdit.eventTheme || ''}" placeholder="Ej: Boda campestre, Fiesta de los 80s..."></div><div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" id="modal-event-date" value="${eventToEdit.eventDate}"></div><div class="form-group"><label>Invitados</label><input type="number" id="modal-guest-count" value="${eventToEdit.guestCount || 50}"></div></div><div class="form-group"><label>Ubicación</label><input type="text" id="modal-event-location" value="${eventToEdit.eventLocation || ''}"></div><button type="submit" class="btn-primary">Guardar Cambios</button></form>`);
         }
         
         const editBudgetBtn = e.target.closest('#edit-budget-btn');
@@ -232,6 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const eventId = e.target.dataset.id; const eventToUpdate = userEvents.find(event => event.id === eventId);
             if(eventToUpdate){
                 eventToUpdate.eventName = document.getElementById('modal-event-name').value;
+                eventToUpdate.eventTheme = document.getElementById('modal-event-theme').value; // <-- CAMBIO APLICADO
                 eventToUpdate.eventDate = document.getElementById('modal-event-date').value;
                 eventToUpdate.eventLocation = document.getElementById('modal-event-location').value;
                 eventToUpdate.guestCount = parseInt(document.getElementById('modal-guest-count').value, 10);
