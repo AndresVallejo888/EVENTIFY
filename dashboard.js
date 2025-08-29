@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const createNewEvent = async () => {
         const newEventData = {
-            userId: currentUser.uid, eventName: "Nuevo Evento", eventDate: "", eventLocation: "",
+            userId: currentUser.uid, eventName: "Nuevo Evento", eventDate: "", eventLocation: "", guestCount: 50,
             budget: { total: 100000, spent: 0 }, vendors: [], savedItems: []
         };
         const docRef = await db.collection('events').add(newEventData);
@@ -48,12 +48,29 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const deleteEvent = async (eventId) => {
         await db.collection('events').doc(eventId).delete();
-        await loadUserEvents(); // Recarga la lista de eventos actualizada
+        await loadUserEvents();
         renderAll();
     };
     const fetchServices = async () => {
         const snapshot = await db.collection('servicios').get();
         allServices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    };
+    const createTicket = async (total) => {
+        if (!activeEvent) return;
+        const ticketData = {
+            userId: currentUser.uid, userEmail: currentUser.email, eventName: activeEvent.eventName,
+            total: total, timestamp: new Date(), vendors: activeEvent.vendors
+        };
+        await db.collection('tickets').add(ticketData);
+    };
+
+    // --- LÓGICA DE CÁLCULO DE PRECIOS ---
+    const calculateServicePrice = (service, guestCount = 50) => {
+        switch(service.pricingModel) {
+            case 'perPerson': return service.basePrice * guestCount;
+            case 'perHour': return service.basePrice * 4; // Asumimos 4 horas por defecto
+            default: return service.basePrice; // flat
+        }
     };
 
     // --- LÓGICA DE RENDERIZADO ---
@@ -114,8 +131,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('services-content');
         if (!activeEvent) { container.innerHTML = "<h2>Selecciona un evento para añadir servicios</h2>"; return; }
         const searchTerm = document.getElementById('search-input').value.toLowerCase();
-        const filteredServices = allServices.filter(s => s.name.toLowerCase().includes(searchTerm));
-        container.innerHTML = `<h2>Explorar Servicios</h2><div class="services-grid">${filteredServices.map(createServiceCardHTML).join('')}</div>`;
+        const filteredServices = allServices.filter(s => s.name.toLowerCase().includes(searchTerm) || s.providerName.toLowerCase().includes(searchTerm));
+        const grouped = filteredServices.reduce((acc, s) => { (acc[s.categoryTitle] = acc[s.categoryTitle] || []).push(s); return acc; }, {});
+        container.innerHTML = Object.keys(grouped).map(category => `
+            <section><h2>${category}</h2><div class="services-grid">${grouped[category].map(createServiceCardHTML).join('')}</div></section>
+        `).join('');
     };
     const createServiceCardHTML = (service) => {
         const isAdded = activeEvent && activeEvent.vendors.some(v => v.id === service.id);
@@ -123,13 +143,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<div class="service-card" data-id="${service.id}">
             <img src="${service.image}" alt="${service.name}" class="service-card-img">
             <div class="service-card-content">
-                <h3>${service.name}</h3><p>${service.providerName || ''} • Desde $${(service.price || 0).toLocaleString()}</p>
+                <h3>${service.name}</h3><p>${service.providerName || ''} • Desde $${(service.basePrice || 0).toLocaleString()}</p>
                 <div class="service-card-actions">
                     <button class="card-btn btn-secondary js-save-item ${isSaved ? 'active' : ''}"><i data-feather="heart"></i> ${isSaved ? 'Guardado' : 'Guardar'}</button>
                     <button class="card-btn btn-primary js-add-item" ${isAdded ? 'disabled' : ''}>${isAdded ? 'Añadido' : 'Añadir'}</button>
                 </div></div></div>`;
     };
     const renderPresupuestoView = () => { /* Similar a Proveedores */ };
+    const renderCartModal = () => {
+        if (!activeEvent) return;
+        let subtotal = 0;
+        const itemsHTML = activeEvent.vendors.map(vendor => {
+            const service = allServices.find(s => s.id === vendor.id);
+            const finalPrice = calculateServicePrice(service, activeEvent.guestCount);
+            subtotal += finalPrice;
+            return `<div class="cart-item"><span>${vendor.name}</span><span>$${finalPrice.toLocaleString()}</span></div>`;
+        }).join('');
+        const iva = subtotal * 0.16;
+        const total = subtotal + iva;
+        openModal('Carrito de Compras', `<div class="cart-items">${itemsHTML || '<p>Aún no has añadido servicios.</p>'}</div>
+            <div class="cart-total"><p>Subtotal: <strong>$${subtotal.toLocaleString()}</strong></p><p>IVA (16%): <strong>$${iva.toLocaleString()}</strong></p><hr><p>Total: <strong>$${total.toLocaleString()}</strong></p></div>
+            <button class="btn-primary" id="generate-payment-btn" ${subtotal === 0 ? 'disabled' : ''}>Generar Ficha de Pago</button>`);
+    };
+    const renderPaymentSlipModal = (total) => {
+        const msi = (total / 12).toFixed(2);
+        openModal('Ficha de Pago', `<div class="payment-slip"><h3>Realizar Transferencia Bancaria</h3><p><strong>Beneficiario:</strong> Eventify S.A. de C.V.</p><p><strong>Banco:</strong> BBVA México</p><p><strong>CLABE:</strong> 012 345 67890123456 7</p><p><strong>Monto a Pagar:</strong> $${total.toLocaleString()}</p><hr><p>O paga a <strong>12 meses sin intereses</strong> de $${msi.toLocaleString()} con tarjetas participantes.</p></div>`);
+    };
 
     // --- MANEJO DE VISTAS Y MODALES ---
     const switchView = (viewName) => { document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active')); document.getElementById(`view-${viewName}`).classList.add('active'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); document.querySelector(`.nav-link[data-view="${viewName}"]`).classList.add('active'); };
@@ -141,13 +180,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const navLink = e.target.closest('.nav-link'); if (navLink) { e.preventDefault(); switchView(navLink.dataset.view); }
         if (e.target.closest('#logout-btn')) { auth.signOut(); }
         if (e.target.closest('#create-event-btn')) { await createNewEvent(); }
+        if (e.target.closest('#cart-button')) { renderCartModal(); }
         if (e.target.closest('#modal-close-btn') || e.target === modalContainer) { closeModal(); }
         
+        if (e.target.id === 'generate-payment-btn' && activeEvent) {
+            const subtotal = activeEvent.vendors.reduce((sum, v) => calculateServicePrice(allServices.find(s => s.id === v.id), activeEvent.guestCount) + sum, 0);
+            const total = subtotal * 1.16;
+            await createTicket(total);
+            renderPaymentSlipModal(total);
+        }
+
         const deleteEventBtn = e.target.closest('.js-delete-event');
         if (deleteEventBtn) {
             const eventId = deleteEventBtn.dataset.id;
             const eventToDelete = userEvents.find(e => e.id === eventId);
-            if (confirm(`¿Estás seguro de que quieres eliminar el evento "${eventToDelete.eventName}"? Esta acción no se puede deshacer.`)) {
+            if (confirm(`¿Estás seguro de que quieres eliminar el evento "${eventToDelete.eventName}"?`)) {
                 await deleteEvent(eventId);
             }
         }
@@ -161,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const editEventBtn = e.target.closest('.js-edit-event');
         if (editEventBtn) {
             const eventToEdit = userEvents.find(event => event.id === editEventBtn.dataset.id);
-            openModal('Editar Detalles del Evento', `<form id="event-details-form" data-id="${eventToEdit.id}"><div class="form-group"><label>Nombre</label><input type="text" id="modal-event-name" value="${eventToEdit.eventName}"></div><div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" id="modal-event-date" value="${eventToEdit.eventDate}"></div><div class="form-group"><label>Ubicación</label><input type="text" id="modal-event-location" value="${eventToEdit.eventLocation || ''}"></div></div><button type="submit" class="btn-primary">Guardar Cambios</button></form>`);
+            openModal('Editar Detalles del Evento', `<form id="event-details-form" data-id="${eventToEdit.id}"><div class="form-group"><label>Nombre del Evento</label><input type="text" id="modal-event-name" value="${eventToEdit.eventName}"></div><div class="form-row"><div class="form-group"><label>Fecha</label><input type="date" id="modal-event-date" value="${eventToEdit.eventDate}"></div><div class="form-group"><label>Invitados</label><input type="number" id="modal-guest-count" value="${eventToEdit.guestCount || 50}"></div></div><div class="form-group"><label>Ubicación</label><input type="text" id="modal-event-location" value="${eventToEdit.eventLocation || ''}"></div><button type="submit" class="btn-primary">Guardar Cambios</button></form>`);
         }
         
         const editBudgetBtn = e.target.closest('#edit-budget-btn');
@@ -171,11 +218,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saveItemBtn && activeEvent) { const serviceId = saveItemBtn.closest('.service-card').dataset.id; const index = activeEvent.savedItems.indexOf(serviceId); if (index > -1) { activeEvent.savedItems.splice(index, 1); } else { activeEvent.savedItems.push(serviceId); } await saveActiveEvent(); renderAll(); }
         
         const addItemBtn = e.target.closest('.js-add-item');
-        if(addItemBtn && !addItemBtn.disabled && activeEvent){ const serviceId = addItemBtn.closest('.service-card').dataset.id; const service = allServices.find(s => s.id === serviceId); if (service) { activeEvent.vendors.push({ id: service.id, name: service.name, price: service.price, providerName: service.providerName }); await saveActiveEvent(); renderAll(); } }
+        if(addItemBtn && !addItemBtn.disabled && activeEvent){ const serviceId = addItemBtn.closest('.service-card').dataset.id; const service = allServices.find(s => s.id === serviceId); if (service) { activeEvent.vendors.push({ id: service.id, name: service.name, price: service.basePrice, providerName: service.providerName }); await saveActiveEvent(); renderAll(); } }
         
         const deleteVendorBtn = e.target.closest('.delete-vendor-btn');
         if (deleteVendorBtn && activeEvent) { const vendorId = deleteVendorBtn.dataset.id; activeEvent.vendors = activeEvent.vendors.filter(v => v.id !== vendorId); await saveActiveEvent(); renderAll(); }
     });
+
+    document.getElementById('search-input').addEventListener('input', renderServices);
 
     modalContainer.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -185,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 eventToUpdate.eventName = document.getElementById('modal-event-name').value;
                 eventToUpdate.eventDate = document.getElementById('modal-event-date').value;
                 eventToUpdate.eventLocation = document.getElementById('modal-event-location').value;
+                eventToUpdate.guestCount = parseInt(document.getElementById('modal-guest-count').value, 10);
                 activeEvent = eventToUpdate; await saveActiveEvent(); renderAll(); closeModal();
             }
         }

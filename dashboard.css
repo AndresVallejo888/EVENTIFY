@@ -17,6 +17,7 @@ body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--back
 .smart-search .search-icon { margin: 0 8px 0 12px; color: var(--text-light); }
 .smart-search input { flex-grow: 1; border: none; outline: none; padding: 10px 0; font-size: 16px; background: transparent; }
 .user-actions { display: flex; align-items: center; gap: 16px; }
+.action-icon { color: var(--text-light); padding: 8px; cursor: pointer; }
 .user-profile { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .user-profile img { width: 36px; height: 36px; border-radius: 50%; }
 .user-profile span { font-weight: 600; }
@@ -37,8 +38,9 @@ body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--back
 .service-card-content p { margin: 0 0 16px; color: var(--text-light); font-size: 14px; }
 .service-card-actions { display: flex; gap: 10px; }
 .card-btn { flex: 1; padding: 10px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.card-btn:disabled { background-color: var(--border-color); cursor: not-allowed; }
 .btn-primary { background: var(--primary-color); color: var(--white); border: 1px solid var(--primary-color); }
-.btn-primary:hover { background: #5B21B6; }
+.btn-primary:hover:not(:disabled) { background: #5B21B6; }
 .btn-secondary { background: var(--white); color: var(--text-light); border: 1px solid var(--border-color); }
 .btn-secondary:hover { background: #F9FAFB; }
 .btn-secondary.active { background: var(--primary-light); color: var(--primary-color); border-color: var(--primary-color); }
@@ -59,7 +61,7 @@ body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--back
 .vendor-list { list-style: none; padding: 0; }
 .vendor-list li { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
 .vendor-list li:last-child { border-bottom: none; }
-.vendor-list .delete-vendor-btn { background: none; border: none; color: var(--text-light); cursor: pointer; }
+.vendor-list .delete-vendor-btn { background: none; border: none; color: var(--text-light); cursor: pointer; display: flex; align-items: center; }
 .vendor-list .delete-vendor-btn:hover { color: #EF4444; }
 #events-list-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
 .event-card { background: var(--white); border: 1px solid var(--border-color); padding: 20px; border-radius: var(--border-radius); transition: all 0.2s; position: relative; }
@@ -71,3 +73,8 @@ body { font-family: 'Inter', sans-serif; margin: 0; background-color: var(--back
 .event-card-actions { margin-top: 16px; display: flex; gap: 10px; }
 .delete-event-btn { position: absolute; top: 5px; right: 5px; background: none; border: none; font-size: 24px; font-weight: bold; color: var(--text-light); cursor: pointer; line-height: 1; padding: 5px; border-radius: 50%; transition: all 0.2s; }
 .delete-event-btn:hover { background-color: #FEE2E2; color: #EF4444; }
+.cart-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+.cart-total { text-align: right; margin-top: 20px; font-size: 18px; }
+.payment-slip { border: 1px solid var(--border-color); padding: 20px; border-radius: var(--border-radius); margin-top: 20px; }
+.payment-slip h3 { margin-top: 0; }
+.payment-slip p { margin: 5px 0; }

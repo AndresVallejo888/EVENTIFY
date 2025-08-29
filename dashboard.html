@@ -28,9 +28,10 @@
             <header class="main-header">
                 <div class="smart-search">
                     <i data-feather="search" class="search-icon"></i>
-                    <input type="text" id="search-input" placeholder="Busca 'DJ para bodas' o 'catering'">
+                    <input type="text" id="search-input" placeholder="Busca por nombre de servicio o proveedor...">
                 </div>
                 <div class="user-actions">
+                    <a href="#" class="action-icon" id="cart-button"><i data-feather="shopping-cart"></i></a>
                     <div class="user-profile" id="profile-button">
                         <img src="https://i.pravatar.cc/40" alt="Avatar">
                         <span id="user-name-display">Cargando...</span>
@@ -61,18 +62,19 @@
 
                 <div id="view-mi-evento" class="app-view">
                     <h2>Mis Eventos <button class="btn-primary btn-small" id="create-event-btn">Crear Nuevo Evento</button></h2>
-                    <div id="events-list-container">
-                        </div>
+                    <div id="events-list-container"></div>
                 </div>
                 
                 <div id="view-presupuesto" class="app-view">
                     <h2>Resumen de Presupuesto <button class="btn-secondary btn-small" id="edit-budget-btn">Editar Total</button></h2>
                     <div class="card-view" id="budget-details-content"></div>
                 </div>
+
                 <div id="view-proveedores" class="app-view">
                     <h2>Mis Proveedores Contratados</h2>
                     <div class="card-view" id="vendors-list-content"></div>
                 </div>
+
                 <div id="view-guardados" class="app-view">
                     <h2>Mis Servicios Guardados</h2>
                     <div id="saved-items-content"></div>

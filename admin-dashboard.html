@@ -1,30 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Admin Dashboard</title>
-    </head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Eventify</title>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
 <body>
-    <div class="admin-container">
-        <h1>Panel de Administrador de Eventify</h1>
-        <div class="card-view">
-            <h2>Añadir Nuevo Servicio/Proveedor</h2>
-            <form id="add-service-form">
-                <input type="text" id="service-name" placeholder="Nombre del Servicio (ej: Fotografía Aérea)" required>
-                <input type="text" id="service-provider" placeholder="Nombre del Proveedor (ej: Drones MTY)" required>
-                <input type="number" id="service-price" placeholder="Precio (ej: 8500)" required>
-                <input type="text" id="service-image" placeholder="URL de la imagen" required>
-                <select id="service-category" required>
-                    <option value="comida-bebida">Comida y Bebida</option>
-                    <option value="musica-entretenimiento">Música y Entretenimiento</option>
-                    <option value="fotografia-video">Fotografía y Video</option>
-                    </select>
-                <button type="submit" class="btn-primary">Añadir Servicio</button>
-            </form>
-        </div>
-        <div class="card-view">
-            <h2>Servicios Existentes</h2>
-            <ul id="services-list"></ul>
-        </div>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="logo">Eventify Admin 🛡️</div></div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-link active" data-view="add-service"><i data-feather="plus-square"></i> Añadir Servicio</a>
+                <a href="#" class="nav-link" data-view="tickets"><i data-feather="file-text"></i> Fichas de Pago</a>
+            </nav>
+            <div class="sidebar-footer"><button id="logout-btn"><i data-feather="log-out"></i> Cerrar Sesión</button></div>
+        </aside>
+        <main class="main-content">
+            <div id="view-add-service" class="app-view active">
+                <h1>Añadir Nuevo Servicio/Proveedor</h1>
+                <div class="card-view">
+                    <form id="add-service-form">
+                        <input type="text" id="service-name" placeholder="Nombre del Servicio" required>
+                        <input type="text" id="service-provider" placeholder="Nombre del Proveedor" required>
+                        <input type="number" id="service-price" placeholder="Precio Base (ej: 8500)" required>
+                        <input type="url" id="service-image" placeholder="URL de la imagen" required>
+                        <select id="service-category" required>
+                            <option value="" disabled selected>-- Selecciona categoría --</option>
+                            <option value="comida-bebida">Comida y Bebida</option>
+                            <option value="musica-entretenimiento">Música y Entretenimiento</option>
+                            </select>
+                        <select id="pricing-model" required>
+                            <option value="" disabled selected>-- Selecciona modelo de precio --</option>
+                            <option value="flat">Precio Fijo (Flat)</option>
+                            <option value="perPerson">Por Persona</option>
+                            <option value="perHour">Por Hora</option>
+                        </select>
+                        <button type="submit" class="btn-primary">Añadir Servicio</button>
+                    </form>
+                </div>
+            </div>
+            <div id="view-tickets" class="app-view">
+                <h1>Fichas de Pago Generadas</h1>
+                <div class="card-view" id="tickets-container"></div>
+            </div>
+        </main>
     </div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head><title>Actualizador de Servicios de Eventify</title></head>
+<body>
+    <h1>Actualizar Modelo de Precios de Servicios</h1>
+    <p>Este script añadirá 'pricingModel' y renombrará 'price' a 'basePrice'. Abre la consola (F12) y haz clic.</p>
+    <button id="update-button">Actualizar Servicios</button>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyDNfKVpCw1cf1geCTzfmMSL1-gtVFy9sjs", authDomain: "eventify-70dbc.firebaseapp.com", projectId: "eventify-70dbc", storageBucket: "eventify-70dbc.appspot.com", messagingSenderId: "489645350340", appId: "1:489645350340:web:f1389c69d8498bb5325891" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function updateServices() {
+            const servicesRef = db.collection("servicios");
+            const snapshot = await servicesRef.get();
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                if (data.price && !data.basePrice) { // Solo actualiza si no ha sido actualizado antes
+                    let model = 'flat'; // Por defecto
+                    if (data.category === 'comida-bebida') model = 'perPerson';
+                    if (data.name.toLowerCase().includes('dj') || data.name.toLowerCase().includes('banda')) model = 'perHour';
+                    
+                    await servicesRef.doc(doc.id).update({
+                        basePrice: data.price,
+                        pricingModel: model,
+                        price: firebase.firestore.FieldValue.delete() // Borra el campo antiguo
+                    });
+                    console.log(`✅ Servicio '${data.name}' actualizado a modelo: ${model}`);
+                }
+            }
+            alert("¡Actualización de servicios completada!");
+        }
+        document.getElementById('update-button').addEventListener('click', updateServices);
+    </script>
+</body>
+</html>
